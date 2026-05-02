@@ -1,0 +1,19 @@
+{
+  "name": "fifa-world-cup-event",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "fix:main": "node scripts/fix-main.cjs",
+    "theme:portal": "node scripts/update-portal-theme.cjs",
+    "theme:ticket": "node scripts/update-ticket-theme.cjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vite": "^8.0.10",
+    "wait-on": "^9.0.5"
+  }
+}

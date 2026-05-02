@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════
+   TEAMS PAGE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.teams-body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Prevent body scroll, let panels scroll */
+}
+
+/* Ensure navbar overlays nicely */
+#main-navbar {
+  flex-shrink: 0;
+}
+
+.teams-container-split {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 118px);
+  position: relative;
+  padding-top: 18px;
+  box-sizing: border-box;
+}
+
+.team-panel {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Background Gradients */
+.panel-bg {
+  position: absolute; inset: 0; z-index: -1;
+  background-size: cover; background-position: center;
+}
+.egypt-panel .panel-bg {
+  background: linear-gradient(135deg, #2c0b0b 0%, #680000 50%, #1a0505 100%);
+}
+.egypt-panel .panel-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%);
+}
+.belgium-panel .panel-bg {
+  background: linear-gradient(135deg, #111111 0%, #2a2a2a 50%, #000000 100%);
+}
+.belgium-panel .panel-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(255,204,0,0.08) 0%, transparent 70%);
+}
+
+.team-hero-info {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  text-align: center; margin-bottom: 50px;
+  position: relative;
+  z-index: 2;
+}
+.team-hero-flag {
+  width: 140px; height: 140px; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.2);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.team-hero-flag:hover {
+  transform: scale(1.05);
+}
+.team-hero-name {
+  font-size: 64px; font-weight: 900; color: #fff; letter-spacing: 8px;
+  text-transform: uppercase; margin: 0;
+  text-shadow: 0 8px 30px rgba(0,0,0,0.8);
+}
+.team-hero-stats {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.stat-badge {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 20px; border-radius: 999px;
+  font-size: 14px; font-weight: 700; color: #e2e8f0;
+  backdrop-filter: blur(10px);
+}
+
+.vs-circle-center {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px; height: 90px;
+  background: #000; border: 4px solid #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 900; color: #fff;
+  z-index: 10; box-shadow: 0 0 50px rgba(0,0,0,0.9);
+  letter-spacing: 2px;
+}
+
+.roster-section { width: 100%; max-width: 500px; position: relative; z-index: 2;}
+.roster-title {
+  font-size: 20px; font-weight: 800; color: #fff;
+  letter-spacing: 4px; margin-bottom: 24px; text-align: center;
+  border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px;
+}
+.roster-grid {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.player-card {
+  display: flex; align-items: center; gap: 20px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 16px 24px; border-radius: 16px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s, background 0.3s, border-color 0.3s;
+}
+.player-card:hover {
+  transform: translateX(10px);
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+}
+.player-number {
+  font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.4);
+  width: 50px; text-align: center;
+}
+.player-info { display: flex; flex-direction: column; gap: 4px; }
+.player-name { font-size: 18px; font-weight: 800; color: #fff; }
+.player-pos { font-size: 13px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+
+/* Custom Scrollbars */
+.team-panel::-webkit-scrollbar { width: 8px; }
+.team-panel::-webkit-scrollbar-track { background: transparent; }
+.team-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
+
+@media (max-width: 960px) {
+  .teams-container-split { flex-direction: column; height: auto; overflow-y: auto; padding-top: 12px; }
+  .team-panel { height: auto; overflow: visible; padding: 60px 20px; }
+  .vs-circle-center { top: auto; position: relative; margin: -45px auto; transform: none; left: auto;}
+}

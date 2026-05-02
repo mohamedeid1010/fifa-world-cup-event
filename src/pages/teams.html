@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Teams - FIFA 2026</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/src/style/style.css">
+    <!-- Specific Styles -->
+    <link rel="stylesheet" href="/src/style/teams.css">
+  </head>
+  <body class="teams-body">
+
+    <!-- Navbar -->
+    <nav class="navbar" id="main-navbar">
+      <a class="nav-brand" href="/#portal" aria-label="FIFA World Cup 2026 home">
+        <svg class="fifa-logo" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg">
+          <text x="0" y="30" font-family="'Outfit', sans-serif" font-weight="800" font-size="28" fill="#ffffff">FIFA</text>
+          <text x="60" y="20" font-family="'Outfit', sans-serif" font-weight="700" font-size="12" fill="#ffffff">WORLD CUP</text>
+          <text x="60" y="30" font-family="'Outfit', sans-serif" font-weight="800" font-size="14" fill="#ffffff">2026</text>
+        </svg>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="site-nav-links" data-nav-toggle>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <div class="nav-shell">
+        <div id="site-nav-links" class="nav-links" data-nav-menu>
+          <a href="/#portal" class="nav-link" data-nav-target="portal">Matchday</a>
+          <a href="/#services" class="nav-link" data-nav-target="services">Services</a>
+          <a href="/#tickets" class="nav-link" data-nav-target="tickets">Tickets</a>
+          <a href="/src/pages/teams.html" class="nav-link is-active" data-nav-target="teams" aria-current="page">Teams</a>
+        </div>
+
+        <a href="/#tickets" class="account-area nav-account-link">
+          <span class="user-profile">
+            <span class="profile-initials nav-account-initials">GO</span>
+          </span>
+          <span class="account-text">
+            <span class="nav-account-name">Guest Fan</span>
+            <span class="nav-account-status">Open Matchday Portal</span>
+          </span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Teams Page Content -->
+    <div class="teams-container-split">
+      <!-- EGYPT PANEL -->
+      <div class="team-panel egypt-panel">
+        <div class="panel-bg"></div>
+        <div class="team-hero-info">
+          <img src="/src/assets/icon/flag.png" alt="Egypt" class="team-hero-flag">
+          <h1 class="team-hero-name">EGYPT</h1>
+          <div class="team-hero-stats">
+            <span class="stat-badge">Manager: Hossam Hassan</span>
+            <span class="stat-badge">Captain: Mohamed Salah</span>
+          </div>
+        </div>
+
+        <div class="roster-section">
+          <h3 class="roster-title">STARTING XI</h3>
+          <div class="roster-grid" id="egypt-roster-grid">
+            <!-- JS populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VS CIRCLE -->
+      <div class="vs-circle-center">VS</div>
+
+      <!-- BELGIUM PANEL -->
+      <div class="team-panel belgium-panel">
+        <div class="panel-bg"></div>
+        <div class="team-hero-info">
+          <img src="/src/assets/icon/belgium (1).png" alt="Belgium" class="team-hero-flag">
+          <h1 class="team-hero-name">BELGIUM</h1>
+          <div class="team-hero-stats">
+            <span class="stat-badge">Manager: Domenico Tedesco</span>
+            <span class="stat-badge">Captain: Kevin De Bruyne</span>
+          </div>
+        </div>
+
+        <div class="roster-section">
+          <h3 class="roster-title">STARTING XI</h3>
+          <div class="roster-grid" id="belgium-roster-grid">
+            <!-- JS populated -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/src/js/teams.js" type="module"></script>
+  </body>
+</html>
