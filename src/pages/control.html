@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FWC Command Deck - Control Center</title>
+    <link rel="stylesheet" href="../style/control.css">
+  </head>
+  <body>
+    <div id="app" class="control-center">
+      <!-- Header -->
+      <header class="header">
+        <h1 class="logo">CONTROL CENTER</h1>
+        <div class="header-icons">
+          <button class="icon-btn">🔔</button>
+          <button class="icon-btn">⚙️</button>
+          <button class="icon-btn">✕</button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <!-- Security Verification Badge -->
+        <div class="security-badge">🔒 SECURITY VERIFICATION</div>
+
+        <!-- Title and Description -->
+        <h2 class="title">SELECT OPERATIONAL ROLE</h2>
+        <p class="description">Choose your assigned division to initialize the FWC Command Deck.</p>
+
+        <!-- Role Selection Cards -->
+        <div class="role-cards">
+          <div class="role-card police-card">
+            <div class="role-icon">🛡️</div>
+            <h3 class="role-title">POLICE COMMAND</h3>
+            <p class="role-subtitle">SECURITY & CROWD FLOW</p>
+            <p class="role-description">Access surveillance, incident mitigation, and field security protocols.</p>
+          </div>
+
+          <div class="role-card medical-card">
+            <div class="role-icon">🏥</div>
+            <h3 class="role-title">MEDICAL RESPONSE</h3>
+            <p class="role-subtitle">EMERGENCY COORDINATION</p>
+            <p class="role-description">Monitor unit deployment, triage alerts, and heart-stress field data.</p>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- Code Bar Modal -->
+      <div id="codeModal" class="code-modal">
+        <div class="code-modal-content">
+          <div class="code-modal-header">
+            <h2 class="code-modal-title" id="codeTitle">ENTER AUTHORIZATION CODE</h2>
+            <button class="code-close-btn" id="codeCloseBtn">✕</button>
+          </div>
+          <div class="code-input-area">
+            <input type="password" id="codeInput" class="code-input" placeholder="••••••" maxlength="6">
+            <div class="code-display" id="codeDisplay">● ● ● ● ● ●</div>
+          </div>
+          <div class="code-buttons">
+            <button class="code-btn cancel" id="codeCancelBtn">CANCEL</button>
+            <button class="code-btn submit" id="codeSubmitBtn">SUBMIT</button>
+          </div>
+          <div class="code-message" id="codeMessage"></div>
+        </div>
+      </div>
+
+      <!-- Footer Status Bar -->
+      <footer class="footer-status">
+        <div class="status-item">
+          <span class="status-label">CORRECTION</span>
+          <span class="status-value" style="color: #4ade80;">✓ SECURE</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">BUILD</span>
+          <span class="status-value">v4.2.8</span>
+        </div>
+        <div class="status-item">
+          <span class="status-icon">🔒 OPS</span>
+        </div>
+      </footer>
+    </div>
+    <script defer src="../js/control.js"></script>
+  </body>
+</html>

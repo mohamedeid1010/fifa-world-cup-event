@@ -404,6 +404,25 @@ body.app-ready .app-container {
   transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
+/* 
+  - Added By Youssif --------------------------------
+*/
+#nav-control {
+  background-color: #ff0000;
+  color: white;
+}
+
+/* #nav-control:hover {
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  box-shadow: 0 12px 28px rgba(15, 98, 254, 0.25);
+} */
+
+
+/* 
+  -----------------------------------------------
+*/
+
 .nav-links a:hover,
 .nav-link:hover {
   color: #ffffff;
