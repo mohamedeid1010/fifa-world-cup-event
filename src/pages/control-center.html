@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="FWC control center linked to the ticket portal and live matchday requests." />
+    <title>FWC Command Deck - Control Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style/control-center.css" >
+  </head>
+  <body>
+    <div id="app" class="control-center">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-copy">
+          <span class="header-eyebrow">Linked To Matchday Portal</span>
+          <h1 class="logo">CONTROL CENTER</h1>
+        </div>
+        <div class="header-actions">
+          <a class="portal-link" href="/">Back To Demo</a>
+          <div class="header-icons">
+          <button class="icon-btn">🔔</button>
+          <button class="icon-btn">⚙️</button>
+          <button class="icon-btn">✕</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <section class="hero-panel">
+          <div class="security-badge">LIVE MATCH SYNC</div>
+          <h2 class="title">SELECT OPERATIONAL ROLE</h2>
+          <p class="description">Open the command lane you need. Tickets and assistance calls are synced from the presentation launcher.</p>
+        </section>
+
+        <section class="portal-sync-grid" aria-label="Portal sync overview">
+          <article class="sync-card sync-card-user">
+            <span class="sync-label">Linked Fan</span>
+            <strong id="linked-user-name">Guest Fan</strong>
+            <span id="linked-user-email" class="sync-note">No signed-in user detected</span>
+          </article>
+          <article class="sync-card">
+            <span class="sync-label">Issued Tickets</span>
+            <strong id="linked-ticket-count">0</strong>
+            <span class="sync-note">Shared ticket inventory</span>
+          </article>
+          <article class="sync-card">
+            <span class="sync-label">Police Alerts</span>
+            <strong id="linked-police-count">0</strong>
+            <span class="sync-note">Requests waiting for police review</span>
+          </article>
+          <article class="sync-card">
+            <span class="sync-label">Medical Alerts</span>
+            <strong id="linked-medical-count">0</strong>
+            <span class="sync-note">Requests waiting for medical review</span>
+          </article>
+        </section>
+
+        <!-- Role Selection Cards -->
+        <div class="role-cards">
+          <div class="role-card police-card">
+            <div class="role-icon">🛡️</div>
+            <h3 class="role-title">POLICE COMMAND</h3>
+            <p class="role-subtitle">SECURITY & CROWD FLOW</p>
+            <p class="role-description">Review portal-linked police requests, manage live incidents, and route units by seat location.</p>
+          </div>
+
+          <div class="role-card medical-card">
+            <div class="role-icon">🏥</div>
+            <h3 class="role-title">MEDICAL RESPONSE</h3>
+            <p class="role-subtitle">EMERGENCY COORDINATION</p>
+            <p class="role-description">Track ambulance calls from the portal, move urgent cases into queue, and resolve dispatches fast.</p>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- Code Bar Modal -->
+      <div id="codeModal" class="code-modal">
+        <div class="code-modal-content">
+          <div class="code-modal-header">
+            <h2 class="code-modal-title" id="codeTitle">ENTER AUTHORIZATION CODE</h2>
+            <button class="code-close-btn" id="codeCloseBtn">✕</button>
+          </div>
+          <div class="code-input-area">
+            <input type="password" id="codeInput" class="code-input" placeholder="••••••" maxlength="6">
+            <div class="code-display" id="codeDisplay">● ● ● ● ● ●</div>
+          </div>
+          <div class="code-buttons">
+            <button class="code-btn cancel" id="codeCancelBtn">CANCEL</button>
+            <button class="code-btn submit" id="codeSubmitBtn">SUBMIT</button>
+          </div>
+          <div class="code-message" id="codeMessage"></div>
+        </div>
+      </div>
+
+      <!-- Footer Status Bar -->
+      <footer class="footer-status">
+        <div class="status-item">
+          <span class="status-label">SYNC</span>
+          <span class="status-value" style="color: #4ade80;">✓ SECURE</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">LAST UPDATE</span>
+          <span id="linked-last-sync" class="status-value">Waiting for portal activity</span>
+        </div>
+        <div class="status-item">
+          <span class="status-icon">🔒 OPS LINKED</span>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="/src/js/control-center.js"></script>
+  </body>
+</html>

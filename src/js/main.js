@@ -1,4 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const USER_ACCESS_KEY = 'fifa-user-access';
+
+  const rawUserAccess = localStorage.getItem(USER_ACCESS_KEY);
+  let hasUserAccess = false;
+
+  if (rawUserAccess) {
+    try {
+      hasUserAccess = Boolean(JSON.parse(rawUserAccess)?.grantedAt);
+    } catch {
+      hasUserAccess = false;
+    }
+  }
+
+  if (!hasUserAccess) {
+    window.location.href = '/';
+    return;
+  }
+
   const STORAGE_KEYS = {
     user: 'fifa-matchday-user',
     tickets: 'fifa-matchday-tickets',
@@ -635,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (elements.navPortal) {
       elements.navPortal.textContent = 'Matchday';
-      elements.navPortal.setAttribute('href', hasTickets ? 'index.html#portal' : 'index.html#matches');
+      elements.navPortal.setAttribute('href', hasTickets ? '/src/pages/user-portal.html#portal' : '/src/pages/user-portal.html#matches');
     }
 
     elements.navbar?.classList.toggle('pre-ticket-nav', !hasTickets);
@@ -1320,7 +1338,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingAction = null;
     saveUser();
     closeAuthModal(false);
-    closeDashboard();
+    returnToMainRoute({ scrollBehavior: 'auto' });
     closeServiceModal();
     closeBookingFlow();
     renderAllDynamicData();
@@ -1432,11 +1450,20 @@ document.addEventListener('DOMContentLoaded', () => {
             kind: 'assistance',
             title: `${type} Assistance`,
             subtitle: getTicketSeatLabel(currentTicket),
-            status: `${type} team dispatched`,
+            status: 'Pending control response',
+            workflowStatus: 'PENDING',
             details: `Priority High`,
-            notes: `Live Location Shared.`,
+            notes: 'Live location shared from the user portal.',
             ticketId: currentTicket.ticketId,
             ownerEmail: currentTicket.ownerEmail,
+            ownerName: currentTicket.ownerName,
+            ownerPhone: state.user?.phone || '',
+            unitType: type.toLowerCase(),
+            section: currentTicket.sectionShort,
+            row: currentTicket.row,
+            seat: currentTicket.seatNumber,
+            source: 'user-portal',
+            risk: 'HIGH',
             createdAt: new Date().toISOString()
           },
           ...state.serviceRequests
@@ -1524,10 +1551,21 @@ document.addEventListener('DOMContentLoaded', () => {
     syncIndexRoute();
   });
 
+  window.addEventListener('storage', (event) => {
+    if (![STORAGE_KEYS.user, STORAGE_KEYS.tickets, STORAGE_KEYS.services].includes(event.key)) {
+      return;
+    }
+
+    state.user = readStorage(STORAGE_KEYS.user, null);
+    state.tickets = readStorage(STORAGE_KEYS.tickets, []);
+    state.serviceRequests = readStorage(STORAGE_KEYS.services, []);
+    renderAllDynamicData();
+    updateAppView();
+  });
+
   initIntro();
   updateTimer();
   window.setInterval(updateTimer, 1000);
-  updateServiceModal('food');
   renderAllDynamicData();
   updateOrderSummary();
 });
