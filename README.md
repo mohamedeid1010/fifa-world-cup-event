@@ -16,6 +16,8 @@ Run these commands **once** when you first join the project:
 ```bash
 git clone https://github.com/mohamedeid1010/fifa-world-cup-event.git
 cd fifa-world-cup-event
+git checkout dev
+git pull origin dev
 npm install
 npm run dev
 ```
@@ -24,6 +26,8 @@ npm run dev
 |---|---|
 | `git clone ...` | Downloads the repository to your machine |
 | `cd fifa-world-cup-event` | Navigates into the project folder |
+| `git checkout dev` | Switches to the shared team development branch |
+| `git pull origin dev` | Downloads the latest team updates from `dev` |
 | `npm install` | Installs all required dependencies |
 | `npm run dev` | Starts the dev server (usually at `localhost:5173`) |
 
@@ -38,6 +42,12 @@ The project uses **three levels of branches**. Each has a strict purpose:
 | `main` | Team Lead only | Final stable release — **DO NOT touch directly** |
 | `dev` | All team members | Ongoing team work — base for all features |
 | `feature/...` | Individual devs | Your personal task branch |
+
+### Current Repository Setup
+
+- `main` is the stable branch.
+- `dev` has already been created and pushed to GitHub.
+- Every new task should start from `dev`, then move into a `feature/...` branch.
 
 ---
 

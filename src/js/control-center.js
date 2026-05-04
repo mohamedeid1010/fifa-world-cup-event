@@ -78,14 +78,11 @@ function formatSyncTime(value) {
 }
 
 function renderPortalSync() {
-  const user = readStorage(STORAGE_KEYS.user, null);
   const tickets = readStorage(STORAGE_KEYS.tickets, []);
   const serviceRequests = readStorage(STORAGE_KEYS.services, []);
   const latestRequest = serviceRequests[0];
   const latestSync = latestRequest?.lastTouchedAt || latestRequest?.handledAt || latestRequest?.archivedAt || latestRequest?.controlQueuedAt || latestRequest?.createdAt || tickets[0]?.purchasedAt;
 
-  document.getElementById('linked-user-name').textContent = user?.name || tickets[0]?.ownerName || 'Guest Fan';
-  document.getElementById('linked-user-email').textContent = user?.email || 'No signed-in user detected';
   document.getElementById('linked-ticket-count').textContent = String(tickets.length);
   document.getElementById('linked-police-count').textContent = String(countRequestsByUnit(serviceRequests, 'police'));
   document.getElementById('linked-medical-count').textContent = String(countRequestsByUnit(serviceRequests, 'ambulance'));

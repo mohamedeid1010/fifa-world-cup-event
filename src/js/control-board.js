@@ -429,8 +429,6 @@ export function initControlBoard(config) {
     archiveToggleBtn: document.getElementById('archiveToggleBtn'),
     dispatchStatusText: document.querySelector('.dispatch-status'),
     incomingRequestCard: document.getElementById('incomingRequestCard'),
-    linkedFan: document.getElementById('board-linked-fan'),
-    linkedEmail: document.getElementById('board-linked-email'),
     ticketCount: document.getElementById('board-ticket-count'),
     requestCount: document.getElementById('board-request-count'),
     syncTime: document.getElementById('board-sync-time'),
@@ -556,11 +554,7 @@ export function initControlBoard(config) {
 
   const renderOverview = (data) => {
     const latestRequest = data.relevantRequests[0];
-    const linkedFan = data.user?.name || latestRequest?.userName || 'Guest Fan';
-    const linkedEmail = data.user?.email || latestRequest?.userEmail || 'No synced user';
 
-    elements.linkedFan.textContent = linkedFan;
-    elements.linkedEmail.textContent = linkedEmail;
     elements.ticketCount.textContent = String(data.tickets.length);
     elements.requestCount.textContent = String(data.active.length + data.intake.length);
     elements.syncTime.textContent = formatSyncTime(latestRequest?.serviceRequest.lastTouchedAt || latestRequest?.serviceRequest.createdAt);
