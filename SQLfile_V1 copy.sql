@@ -77,7 +77,6 @@ CREATE TABLE RowTable (
     FOREIGN KEY (sector_id) REFERENCES Sector(sector_id)
 );
 
--- Table: Seat
 CREATE TABLE Seat (
     seat_id INT PRIMARY KEY,
     status VARCHAR(20) DEFAULT 'Available',

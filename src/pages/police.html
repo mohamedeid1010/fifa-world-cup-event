@@ -19,6 +19,7 @@
           <div class="header-controls">
             <input type="text" class="search-bar" placeholder="Search incidents...">
            
+            <button class="new-dispatch-btn" onclick="window.location.href='/src/pages/control.html'" style="background: #475569; margin-right: 10px;">← RETURN TO CONTROL</button>
             <button class="new-dispatch-btn">+ NEW DISPATCH</button>
           </div>
         </header>
@@ -26,8 +27,12 @@
         <!-- Active Dispatches Section -->
         <div class="dispatches-container">
           <div class="dispatch-banner">
-            <span class="dispatch-count">ACTIVE DISPATCHES</span>
+            <span class="dispatch-count"><span id="board-request-count">0</span> ACTIVE DISPATCHES</span>
             <span class="dispatch-status"> • 0 Done • 0 Processing •  0 PENDING</span>
+            <span style="margin-left: auto; font-size: 0.8rem; color: #94a3b8;">
+                Last Sync: <span id="board-sync-time">Waiting</span>
+                <div id="control-sync-meta" style="display:none;"></div>
+            </span>
           </div>
 
         
@@ -39,11 +44,12 @@
                   <div class="incident-card-header">
                     <div class="incident-avatar">AV</div>
                     <div>
-                      <span class="incident-card-label">INCOMING REQUEST</span>
+                      <span class="incident-card-label" id="summaryLabel">INCOMING REQUEST</span>
                       <h3 class="incident-card-title" id="summaryUserName">ALEXANDER VANCE</h3>
                     </div>
                   </div>
                   <div class="incident-card-body">
+                    <p id="summaryNote" style="display:none;"></p>
                     <div class="incident-card-row"><span>Section</span><strong id="summarySection">402</strong></div>
                     <div class="incident-card-row"><span>Row</span><strong id="summaryRow">L</strong></div>
                     <div class="incident-card-row"><span>Seat</span><strong id="summarySeat">24</strong></div>
@@ -58,6 +64,7 @@
                     <button class="risk-btn" data-risk="NORMAL">Low threat</button>
                   </div>
                   <button class="add-request-btn" id="addRequestBtn">ADD REQUEST TO QUEUE</button>
+                  <div id="board-ticket-count" style="display:none;">0</div>
                 </div>
               </div>
             </div>
@@ -129,6 +136,6 @@
       </div>
     </div>
 
-    <script defer src="../js/police.js"></script>
+    <script type="module" src="../js/police.js"></script>
   </body>
 </html>

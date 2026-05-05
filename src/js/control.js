@@ -56,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
       codeMessage.textContent = '✓ Access Granted';
       codeMessage.classList.add('success');
       
+      // Save access state so control-board.js allows entry
+      localStorage.setItem('fifa-control-access', JSON.stringify({ 
+        grantedAt: new Date().toISOString(),
+        role: selectedRole 
+      }));
+      
       // بما إن كل الصفحات بره في الـ Root، بنكتب اسم الملف مباشرة
       setTimeout(() => {
         window.location.href = selectedRole === 'police' 

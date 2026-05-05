@@ -2099,6 +2099,28 @@
 .auth-change-pw-btn {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.auth-toggle-container {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+#auth-toggle-link {
+  color: #8b0000;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+#auth-toggle-link:hover {
+  color: #a00000;
+  text-decoration: underline;
+}
+  color: #0369a1;
   border: 1px solid rgba(3, 105, 161, 0.2);
   padding: 14px 18px;
   border-radius: 12px;

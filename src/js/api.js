@@ -1,83 +1,59 @@
 const API_BASE = '/api';
 
-class ApiClient {
-  constructor() {
-    this.eventSource = null;
-    this.listeners = new Map();
-  }
-
+export const api = {
   async get(endpoint) {
-    const response = await fetch(`${API_BASE}${endpoint}`);
-    if (!response.ok) throw new Error(`API GET ${endpoint} failed`);
-    return response.json();
-  }
+    const res = await fetch(`${API_BASE}${endpoint}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `GET ${endpoint} failed`);
+    }
+    return res.json();
+  },
 
   async post(endpoint, data) {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!response.ok) {
-      let errorMsg = `API POST ${endpoint} failed`;
-      try {
-        const errBody = await response.json();
-        if (errBody.error) errorMsg = errBody.error;
-      } catch (e) {}
-      throw new Error(errorMsg);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `POST ${endpoint} failed`);
     }
-    return response.json();
-  }
+    return res.json();
+  },
 
   async put(endpoint, data) {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!response.ok) {
-      let errorMsg = `API PUT ${endpoint} failed`;
-      try {
-        const errBody = await response.json();
-        if (errBody.error) errorMsg = errBody.error;
-      } catch (e) {}
-      throw new Error(errorMsg);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `PUT ${endpoint} failed`);
     }
-    return response.json();
-  }
+    return res.json();
+  },
 
   connectSSE() {
-    if (this.eventSource) return;
-    this.eventSource = new EventSource(`${API_BASE}/stream`);
-
-    this.eventSource.addEventListener('new-request', (e) => {
-      this.emit('new-request', JSON.parse(e.data));
-    });
-
-    this.eventSource.addEventListener('update-request', (e) => {
-      this.emit('update-request', JSON.parse(e.data));
-    });
-
-    this.eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      this.eventSource.close();
-      this.eventSource = null;
-      setTimeout(() => this.connectSSE(), 5000); // Reconnect after 5s
+    const source = new EventSource(`${API_BASE}/stream`);
+    source.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (this.listeners[data.type]) {
+          this.listeners[data.type].forEach(cb => cb(data.payload));
+        }
+      } catch (err) {
+        console.error('SSE Error:', err);
+      }
     };
-  }
+    this.source = source;
+  },
 
-  on(event, callback) {
-    if (!this.listeners.has(event)) {
-      this.listeners.set(event, []);
-    }
-    this.listeners.get(event).push(callback);
+  listeners: {},
+  on(type, callback) {
+    if (!this.listeners[type]) this.listeners[type] = [];
+    this.listeners[type].push(callback);
   }
-
-  emit(event, data) {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach(callback => callback(data));
-    }
-  }
-}
-
-export const api = new ApiClient();
+};

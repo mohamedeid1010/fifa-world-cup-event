@@ -124,6 +124,26 @@ router.put('/auth/password', async (req, res) => {
   }
 });
 
+router.get('/seats', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request().query(`
+      SELECT 
+        s.sector_name as section,
+        rt.row_num as row,
+        st.seat_id as seatNumber
+      FROM Seat st
+      JOIN RowTable rt ON st.row_id = rt.row_id
+      JOIN Sector s ON rt.sector_id = s.sector_id
+      WHERE st.status = 'Booked'
+    `);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error('GET /seats error:', err);
+    res.status(500).json({ error: 'Failed to fetch seats' });
+  }
+});
+
 router.get('/tickets', async (req, res) => {
   try {
     const pool = await getPool();

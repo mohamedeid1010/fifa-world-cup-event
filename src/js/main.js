@@ -111,9 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cartTotal: document.getElementById('cart-total'),
     checkoutRestaurantBtn: document.getElementById('checkout-restaurant-btn'),
     restaurantTicketSelect: document.getElementById('restaurant-ticket-select'),
-    checkoutRestaurantBtn: document.getElementById('checkout-restaurant-btn'),
-    restaurantTicketSelect: document.getElementById('restaurant-ticket-select'),
-    categoryBtns: document.querySelectorAll('.category-btn')
+    categoryBtns: document.querySelectorAll('.category-btn'),
+    authToggleContainer: document.querySelector('.auth-toggle-container')
   };
 
   const state = {
@@ -123,7 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
     tickets: readStorage(STORAGE_KEYS.tickets, []),
     serviceRequests: [],
     dashboardRequested: null,
-    dashboardRoute: 'tickets'
+    dashboardRoute: 'tickets',
+    authMode: 'signup', // 'signup' or 'signin'
+    allBookedSeats: []
   };
 
   let pendingAction = null;
@@ -373,6 +374,12 @@ document.addEventListener('DOMContentLoaded', () => {
         openDashboard('portal', { scrollBehavior });
         return;
       }
+      
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#signup' && !state.user) {
+        openAuthModal();
+      }
+
       state.dashboardRequested = hasExplicitRoute ? false : null;
       state.dashboardRoute = hasExplicitRoute ? 'tickets' : 'portal';
       updateAppView();
@@ -433,15 +440,44 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.authPassword.placeholder = 'Current password';
         elements.authPassword.required = false;
       }
+      
+      // Hide name/phone if already logged in (using stored values)
+      elements.authName.parentElement.style.display = '';
+      elements.authPhone.parentElement.style.display = '';
+      
       // Hide signup/signin toggle when logged in
-      const toggleContainer = document.querySelector('.auth-toggle-container');
-      if (toggleContainer) toggleContainer.style.display = 'none';
+      if (elements.authToggleContainer) elements.authToggleContainer.style.display = 'none';
       return;
     }
 
-    elements.authModalTitle.textContent = 'Sign in before you buy your ticket';
-    elements.authModalDescription.textContent = 'Save your booking in My Tickets and unlock food delivery plus police, ambulance, and stadium support requests on matchday.';
-    elements.authSubmitBtn.textContent = 'Continue to Matchday';
+    if (elements.authToggleContainer) elements.authToggleContainer.style.display = 'flex';
+
+    if (state.authMode === 'signin') {
+      elements.authModalTitle.textContent = 'Sign In to Matchday';
+      elements.authModalDescription.textContent = 'Access your tickets, food orders, and emergency requests.';
+      elements.authSubmitBtn.textContent = 'Sign In';
+      
+      // Update toggle buttons visual state
+      if (elements.toggleSigninBtn) elements.toggleSigninBtn.classList.add('active');
+      if (elements.toggleSignupBtn) elements.toggleSignupBtn.classList.remove('active');
+
+      // Hide signup-only fields
+      document.querySelectorAll('.signup-only').forEach(el => el.style.display = 'none');
+      if (elements.authName) elements.authName.required = false;
+    } else {
+      elements.authModalTitle.textContent = 'Sign in before you buy your ticket';
+      elements.authModalDescription.textContent = 'Save your booking in My Tickets and unlock food delivery plus police, ambulance, and stadium support requests on matchday.';
+      elements.authSubmitBtn.textContent = 'Create Account';
+      
+      // Update toggle buttons visual state
+      if (elements.toggleSignupBtn) elements.toggleSignupBtn.classList.add('active');
+      if (elements.toggleSigninBtn) elements.toggleSigninBtn.classList.remove('active');
+
+      // Show signup-only fields
+      document.querySelectorAll('.signup-only').forEach(el => el.style.display = '');
+      if (elements.authName) elements.authName.required = true;
+    }
+
     elements.authLogoutBtn.hidden = true;
     if (elements.authChangePwBtn) elements.authChangePwBtn.hidden = true;
     if (elements.passwordChangeGroup) elements.passwordChangeGroup.style.display = 'none';
@@ -449,8 +485,6 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.authPassword.placeholder = '••••••••';
       elements.authPassword.required = true;
     }
-    const toggleContainer = document.querySelector('.auth-toggle-container');
-    if (toggleContainer) toggleContainer.style.display = '';
   }
 
   function renderUserProfile() {
@@ -593,6 +627,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const notes = escapeHtml(request.notes || 'No extra details added.').replace(/\n/g, '<br>');
     const title = request.title || `${request.unitType?.toUpperCase()} Assistance`;
     const subtitle = request.subtitle || `Section ${request.section} | Row ${request.row} Seat ${request.seat}`;
+    
+    // Status styling
+    const status = request.workflowStatus || 'PENDING';
+    const statusClass = status.toLowerCase();
+    const unitText = request.assignedUnit ? `<span class="service-unit-tag">Unit: ${escapeHtml(request.assignedUnit)}</span>` : '';
 
     return `
       <div class="service-request-card ${escapeHtml(request.kind || 'assistance')}">
@@ -601,11 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="service-request-title">${escapeHtml(title)}</div>
             <div class="service-request-subtitle">${escapeHtml(subtitle)}</div>
           </div>
-          <div class="service-request-status">${escapeHtml(request.status)}</div>
+          <div class="service-request-status-pill ${statusClass}">${escapeHtml(status)}</div>
         </div>
         <div class="service-request-meta">
           <span>ID: ${escapeHtml(String(request.id))}</span>
-          <span>Priority: ${escapeHtml(request.risk || 'NORMAL')}</span>
+          ${unitText}
+          <span class="service-priority-tag ${escapeHtml((request.risk || 'NORMAL').toLowerCase())}">${escapeHtml(request.risk || 'NORMAL')}</span>
         </div>
         <div class="service-request-notes">${notes}</div>
       </div>
@@ -665,14 +705,15 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.navPortal.setAttribute('href', hasTickets ? 'index.html#portal' : 'index.html#matches');
     }
 
-    elements.navbar?.classList.toggle('pre-ticket-nav', !hasTickets);
+    // elements.navbar?.classList.toggle('pre-ticket-nav', !hasTickets); // Removed to keep navbar always visible
     if (elements.openAuthBtn) {
       elements.openAuthBtn.hidden = false;
     }
 
-    if (!hasTickets) {
-      setNavbarOpen(false);
-    }
+    // Always keep toggle visible if we want navbar always accessible
+    // if (!hasTickets) {
+    //   setNavbarOpen(false);
+    // }
 
     document.body.classList.toggle('portal-mode', shouldShowDashboard);
     elements.appContainer.classList.toggle('portal-mode', shouldShowDashboard);
@@ -1048,19 +1089,27 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.serviceModal.classList.add('hidden');
   }
 
-  function isSeatUnavailable(sectionName, seatId) {
-    const occupiedKey = `${sectionName}-${seatId}`;
-
-    if (!occupiedSeatCache.has(occupiedKey)) {
-      const hashValue = Array.from(occupiedKey).reduce((sum, character) => sum + character.charCodeAt(0), 0);
-      occupiedSeatCache.set(occupiedKey, hashValue % 10 < 3);
+  async function loadAllBookedSeats() {
+    try {
+      state.allBookedSeats = await api.get('/seats');
+    } catch (err) {
+      console.error('Failed to load all booked seats:', err);
     }
+  }
 
-    const alreadyBooked = state.tickets.some(
-      (ticket) => ticket.section === sectionName && ticket.row === seatId.charAt(0) && ticket.seatNumber === seatId.substring(1)
+  function isSeatUnavailable(sectionName, seatId) {
+    const row = seatId.charAt(0);
+    const seatNumber = seatId.substring(1);
+
+    const isBookedInDB = state.allBookedSeats.some(
+      (s) => s.section === sectionName && String(s.row) === String(row.charCodeAt(0) - 64) && String(s.seatNumber) === String(seatNumber)
     );
 
-    return occupiedSeatCache.get(occupiedKey) || alreadyBooked;
+    const alreadyBookedByMe = state.tickets.some(
+      (ticket) => ticket.section === sectionName && ticket.row === row && ticket.seatNumber === seatNumber
+    );
+
+    return isBookedInDB || alreadyBookedByMe;
   }
 
   function generateSeats() {
@@ -1350,21 +1399,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (elements.toggleSignupBtn && elements.toggleSigninBtn) {
     elements.toggleSignupBtn.addEventListener('click', () => {
-      elements.authForm.dataset.mode = 'signup';
-      elements.toggleSignupBtn.classList.add('active');
-      elements.toggleSigninBtn.classList.remove('active');
-      elements.authSubmitBtn.textContent = 'Create Account';
-      elements.authErrorMsg.classList.add('hidden');
-      elements.authName.required = true;
+      state.authMode = 'signup';
+      renderAuthModalState();
     });
 
     elements.toggleSigninBtn.addEventListener('click', () => {
-      elements.authForm.dataset.mode = 'signin';
-      elements.toggleSigninBtn.classList.add('active');
-      elements.toggleSignupBtn.classList.remove('active');
-      elements.authSubmitBtn.textContent = 'Sign In';
-      elements.authErrorMsg.classList.add('hidden');
-      elements.authName.required = false;
+      state.authMode = 'signin';
+      renderAuthModalState();
     });
   }
 
@@ -1373,18 +1414,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (elements.authErrorMsg) elements.authErrorMsg.classList.add('hidden');
     
-    const mode = elements.authForm.dataset.mode || 'signup';
-    const name = elements.authName.value.trim();
-    const email = elements.authEmail.value.trim().toLowerCase();
-    const phone = elements.authPhone.value.trim();
-    const password = elements.authPassword.value;
+    let mode = 'signup';
+    if (state.user) {
+      mode = 'update';
+    } else if (state.authMode === 'signin') {
+      mode = 'signin';
+    }
+
+    const name = elements.authName?.value?.trim() || '';
+    const email = elements.authEmail?.value?.trim()?.toLowerCase() || '';
+    const phone = elements.authPhone?.value?.trim() || '';
+    const password = elements.authPassword?.value || '';
+
+    if (!email || !password) {
+      if (elements.authErrorMsg) {
+        elements.authErrorMsg.textContent = 'Email and password are required.';
+        elements.authErrorMsg.classList.remove('hidden');
+      }
+      return;
+    }
 
     elements.authSubmitBtn.disabled = true;
     const originalBtnText = elements.authSubmitBtn.textContent;
     elements.authSubmitBtn.textContent = 'Please wait...';
 
     try {
-      if (mode === 'signup') {
+      if (mode === 'update') {
+        const currentPassword = elements.authPassword.value;
+        const newPassword = elements.authNewPassword?.value;
+        if (newPassword) {
+          await api.put('/auth/password', { email: state.user.email, currentPassword, newPassword });
+          elements.authSuccessMsg.textContent = 'Password updated successfully!';
+          elements.authSuccessMsg.classList.remove('hidden');
+        } else {
+          // Just updating name/phone (not implemented on backend yet, but we'll save locally)
+          state.user.name = name;
+          state.user.phone = phone;
+          elements.authSuccessMsg.textContent = 'Account details updated locally.';
+          elements.authSuccessMsg.classList.remove('hidden');
+        }
+      } else if (mode === 'signup') {
+        if (!name) throw new Error('Full name is required for signup.');
         const res = await api.post('/auth/signup', { name, email, phone, password });
         state.user = res.user;
       } else {
@@ -1486,7 +1556,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.querySelectorAll('.stadium-section').forEach((section) => {
-    section.addEventListener('click', (event) => {
+    section.addEventListener('click', async (event) => {
       const sectionElement = event.currentTarget;
 
       state.currentSection.name = sectionElement.getAttribute('data-section');
@@ -1496,6 +1566,8 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.currentSectionTitle.innerText = state.currentSection.name;
       elements.stadiumView.classList.add('hidden');
       elements.seatView.classList.remove('hidden');
+      
+      await loadAllBookedSeats();
       generateSeats();
     });
   });
@@ -1542,18 +1614,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (elements.navPortal) {
     elements.navPortal.addEventListener('click', (event) => {
       event.preventDefault();
+      if (!ensureAuthenticated(() => routeToIndexSection(currentUserHasTickets() ? 'portal' : 'matches'))) {
+        return;
+      }
       routeToIndexSection(currentUserHasTickets() ? 'portal' : 'matches');
     });
   }
 
   elements.navTickets.addEventListener('click', (event) => {
     event.preventDefault();
+    if (!ensureAuthenticated(() => routeToIndexSection('tickets'))) {
+      return;
+    }
     routeToIndexSection('tickets');
   });
 
   if (elements.navServices) {
     elements.navServices.addEventListener('click', (event) => {
       event.preventDefault();
+      if (!ensureAuthenticated(() => routeToIndexSection('services'))) {
+        return;
+      }
       routeToIndexSection('services');
     });
   }
@@ -1763,6 +1844,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial Data Load
   (async () => {
     await renderAllDynamicData();
+    renderAuthModalState();
     initIntro();
     updateTimer();
     window.setInterval(updateTimer, 1000);
