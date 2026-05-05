@@ -1,3 +1,5 @@
+import { api } from './api.js';
+
 document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEYS = {
     user: 'fifa-matchday-user',
@@ -42,6 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
     authName: document.getElementById('auth-name'),
     authEmail: document.getElementById('auth-email'),
     authPhone: document.getElementById('auth-phone'),
+    authPassword: document.getElementById('auth-password'),
+    authNewPassword: document.getElementById('auth-new-password'),
+    authChangePwBtn: document.getElementById('auth-change-pw-btn'),
+    authSuccessMsg: document.getElementById('auth-success-msg'),
+    passwordChangeGroup: document.querySelector('.password-change-only'),
+    authSubmitBtn: document.getElementById('auth-submit-btn'),
+    authLogoutBtn: document.getElementById('auth-logout-btn'),
+    toggleSignupBtn: document.getElementById('toggle-signup'),
+    toggleSigninBtn: document.getElementById('toggle-signin'),
+    authErrorMsg: document.getElementById('auth-error-msg'),
     authSubmitBtn: document.getElementById('auth-submit-btn'),
     authLogoutBtn: document.getElementById('auth-logout-btn'),
     modal: document.getElementById('booking-modal'),
@@ -109,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedSeats: [],
     currentSection: { name: '', price: 0 },
     tickets: readStorage(STORAGE_KEYS.tickets, []),
-    serviceRequests: readStorage(STORAGE_KEYS.services, []),
+    serviceRequests: [],
     dashboardRequested: null,
     dashboardRoute: 'tickets'
   };
@@ -163,30 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function getCurrentUserTickets() {
     const email = getCurrentUserEmail();
 
-    if (!email) {
-      return [];
-    }
-
-    return state.tickets
-      .filter((ticket) => ticket.ownerEmail === email)
-      .sort((left, right) => new Date(right.purchasedAt) - new Date(left.purchasedAt));
+    return state.tickets || [];
   }
 
   function hasTicketForEmail(email) {
-    if (!email) return false;
-    return state.tickets.some((ticket) => ticket.ownerEmail === email.toLowerCase());
+    return state.tickets.some(t => t.ownerEmail === email);
   }
 
   function getCurrentUserServiceRequests() {
-    const email = getCurrentUserEmail();
-
-    if (!email) {
-      return [];
-    }
-
-    return state.serviceRequests
-      .filter((request) => request.ownerEmail === email)
-      .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt));
+    return state.serviceRequests || [];
   }
 
   function saveUser() {
@@ -203,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveServiceRequests() {
-    writeStorage(STORAGE_KEYS.services, state.serviceRequests);
+    // Deprecated: API used instead
   }
 
   function escapeHtml(value) {
@@ -424,11 +421,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderAuthModalState() {
+    if (elements.authSuccessMsg) elements.authSuccessMsg.classList.add('hidden');
     if (state.user) {
       elements.authModalTitle.textContent = 'Account settings';
-      elements.authModalDescription.textContent = 'Update your details or log out from this device. Your tickets remain saved to your account.';
+      elements.authModalDescription.textContent = 'Update your details, change your password, or log out.';
       elements.authSubmitBtn.textContent = 'Save Account';
       elements.authLogoutBtn.hidden = false;
+      if (elements.authChangePwBtn) elements.authChangePwBtn.hidden = false;
+      if (elements.passwordChangeGroup) elements.passwordChangeGroup.style.display = '';
+      if (elements.authPassword) {
+        elements.authPassword.placeholder = 'Current password';
+        elements.authPassword.required = false;
+      }
+      // Hide signup/signin toggle when logged in
+      const toggleContainer = document.querySelector('.auth-toggle-container');
+      if (toggleContainer) toggleContainer.style.display = 'none';
       return;
     }
 
@@ -436,6 +443,14 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.authModalDescription.textContent = 'Save your booking in My Tickets and unlock food delivery plus police, ambulance, and stadium support requests on matchday.';
     elements.authSubmitBtn.textContent = 'Continue to Matchday';
     elements.authLogoutBtn.hidden = true;
+    if (elements.authChangePwBtn) elements.authChangePwBtn.hidden = true;
+    if (elements.passwordChangeGroup) elements.passwordChangeGroup.style.display = 'none';
+    if (elements.authPassword) {
+      elements.authPassword.placeholder = '••••••••';
+      elements.authPassword.required = true;
+    }
+    const toggleContainer = document.querySelector('.auth-toggle-container');
+    if (toggleContainer) toggleContainer.style.display = '';
   }
 
   function renderUserProfile() {
@@ -548,39 +563,49 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  function renderTickets() {
-    const currentTickets = getCurrentUserTickets();
+  async function renderTickets() {
+    if (!state.user?.email) return;
+    
+    try {
+      const tickets = await api.get(`/tickets?email=${encodeURIComponent(state.user.email)}`);
+      state.tickets = tickets;
 
-    if (currentTickets.length === 0) {
-      const emptyMarkup = buildEmptyTicketMarkup();
-      elements.ticketsList.innerHTML = emptyMarkup;
-      elements.dashboardTicketsList.innerHTML = emptyMarkup;
-      elements.goToPortalBtn.disabled = true;
-      return;
+      if (tickets.length === 0) {
+        const emptyMarkup = buildEmptyTicketMarkup();
+        elements.ticketsList.innerHTML = emptyMarkup;
+        elements.dashboardTicketsList.innerHTML = emptyMarkup;
+        elements.goToPortalBtn.disabled = true;
+        updateServiceButtonState();
+        return;
+      }
+
+      const markup = tickets.map(buildTicketMarkup).join('');
+      elements.ticketsList.innerHTML = markup;
+      elements.dashboardTicketsList.innerHTML = markup;
+      elements.goToPortalBtn.disabled = false;
+      updateServiceButtonState();
+    } catch (err) {
+      console.error('Failed to render tickets from database:', err);
     }
-
-    const markup = currentTickets.map(buildTicketMarkup).join('');
-    elements.ticketsList.innerHTML = markup;
-    elements.dashboardTicketsList.innerHTML = markup;
-    elements.goToPortalBtn.disabled = false;
   }
 
   function buildServiceRequestMarkup(request) {
     const notes = escapeHtml(request.notes || 'No extra details added.').replace(/\n/g, '<br>');
+    const title = request.title || `${request.unitType?.toUpperCase()} Assistance`;
+    const subtitle = request.subtitle || `Section ${request.section} | Row ${request.row} Seat ${request.seat}`;
 
     return `
-      <div class="service-request-card ${escapeHtml(request.kind)}">
+      <div class="service-request-card ${escapeHtml(request.kind || 'assistance')}">
         <div class="service-request-top">
           <div>
-            <div class="service-request-title">${escapeHtml(request.title)}</div>
-            <div class="service-request-subtitle">${escapeHtml(request.subtitle)}</div>
+            <div class="service-request-title">${escapeHtml(title)}</div>
+            <div class="service-request-subtitle">${escapeHtml(subtitle)}</div>
           </div>
           <div class="service-request-status">${escapeHtml(request.status)}</div>
         </div>
         <div class="service-request-meta">
-          <span>${escapeHtml(request.details)}</span>
-          <span>${escapeHtml(request.ticketId)}</span>
-          <span>${escapeHtml(formatDateTime(request.createdAt))}</span>
+          <span>ID: ${escapeHtml(String(request.id))}</span>
+          <span>Priority: ${escapeHtml(request.risk || 'NORMAL')}</span>
         </div>
         <div class="service-request-notes">${notes}</div>
       </div>
@@ -590,32 +615,34 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateServiceButtonState() {
     const hasTickets = getCurrentUserTickets().length > 0;
 
-    elements.browseMenuBtn.disabled = !hasTickets;
-    elements.requestHelpBtn.disabled = !hasTickets;
     elements.browseMenuBtn.title = hasTickets ? '' : 'Book a ticket first';
     elements.requestHelpBtn.title = hasTickets ? '' : 'Book a ticket first';
   }
 
-  function renderServiceRequests() {
-    const requests = getCurrentUserServiceRequests();
+  async function renderServiceRequests() {
+    if (!state.user?.email) return;
 
-    if (requests.length === 0) {
-      elements.serviceRequestsList.innerHTML = '<div class="service-empty-state">No requests yet. Order food or ask for help from the cards above.</div>';
+    try {
+      const requests = await api.get(`/requests?email=${encodeURIComponent(state.user.email)}`);
+      state.serviceRequests = requests;
+
+      if (requests.length === 0) {
+        elements.serviceRequestsList.innerHTML = '<div class="service-empty-state">No requests yet. Order food or ask for help from the cards above.</div>';
+        updateServiceButtonState();
+        return;
+      }
+
+      elements.serviceRequestsList.innerHTML = requests.map(buildServiceRequestMarkup).join('');
       updateServiceButtonState();
-      return;
+    } catch (err) {
+      console.error('Failed to render requests from database:', err);
     }
-
-    elements.serviceRequestsList.innerHTML = requests.map(buildServiceRequestMarkup).join('');
-    updateServiceButtonState();
   }
 
-    // No more populateServiceTicketOptions required here
-
-  function renderAllDynamicData() {
+  async function renderAllDynamicData() {
     renderUserProfile();
     renderDashboardSummary();
-    renderTickets();
-    renderServiceRequests();
+    await Promise.all([renderTickets(), renderServiceRequests()]);
   }
 
   function markAppReady() {
@@ -732,8 +759,30 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingAction = action || null;
     updateAuthFormFromState();
     renderAuthModalState();
+    
+    if (elements.authErrorMsg) elements.authErrorMsg.classList.add('hidden');
+    if (elements.authSuccessMsg) elements.authSuccessMsg.classList.add('hidden');
+    if (elements.authPassword) elements.authPassword.value = '';
+    if (elements.authNewPassword) elements.authNewPassword.value = '';
+
+    if (state.user) {
+      // Logged-in: show account settings mode
+      if (elements.authForm) elements.authForm.dataset.mode = 'settings';
+    } else {
+      // Not logged in: show signup mode
+      if (elements.authForm) {
+        elements.authForm.dataset.mode = 'signup';
+        elements.authName.required = true;
+      }
+      if (elements.toggleSignupBtn) {
+        elements.toggleSignupBtn.classList.add('active');
+        elements.toggleSigninBtn.classList.remove('active');
+        elements.authSubmitBtn.textContent = 'Create Account';
+      }
+    }
+    
     elements.authModal.classList.remove('hidden');
-    elements.authName.focus();
+    if (!state.user) elements.authName.focus();
   }
 
   function closeAuthModal(clearPendingAction = true) {
@@ -812,7 +861,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function openRestaurantModal() {
     const currentTickets = getCurrentUserTickets();
     if (currentTickets.length === 0) {
-      openDashboard();
       showDashboardNotice('You need a ticket to order food.');
       return;
     }
@@ -935,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.checkoutRestaurantBtn.disabled = itemCount === 0;
   }
 
-  function placeRestaurantOrder() {
+  async function placeRestaurantOrder() {
     const selectedTicketId = elements.restaurantTicketSelect.value;
     const currentTicket = getCurrentUserTickets().find((ticket) => ticket.ticketId === selectedTicketId);
 
@@ -957,33 +1005,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const orderDesc = itemsList.join(', ');
 
-    const newReq = {
-      id: 'REQ-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
-      kind: 'food',
-      ticketId: selectedTicketId,
-      ownerEmail: getCurrentUserEmail(),
-      title: 'Restaurant Order',
-      subtitle: getTicketSeatLabel(currentTicket),
-      status: 'Preparing',
-      details: orderDesc,
-      notes: `Total: ${elements.cartTotal.textContent}`,
-      createdAt: new Date().toISOString()
-    };
+    const items = Object.keys(restaurantCart).map(id => {
+      const menuItem = RESTAURANT_MENU.find(m => m.id === id);
+      return { id, name: menuItem?.name, quantity: restaurantCart[id] };
+    });
 
-    state.serviceRequests.unshift(newReq);
-    saveServiceRequests();
-    
-    closeRestaurantModal();
-    renderServiceRequests();
-    openDashboard();
-    showDashboardNotice('Order placed successfully! The restaurant is preparing your food.');
+    try {
+      await api.post('/food-orders', {
+        email: getCurrentUserEmail(),
+        items: items,
+        notes: `Total: ${elements.cartTotal.textContent}`
+      });
+      
+      closeRestaurantModal();
+      await renderServiceRequests();
+      openDashboard();
+      showDashboardNotice('Order placed successfully! The restaurant is preparing your food.');
+    } catch (err) {
+      console.error(err);
+      showDashboardNotice('Failed to place order.');
+    }
   }
 
   function openServiceModal() {
     const currentTickets = getCurrentUserTickets();
 
     if (currentTickets.length === 0) {
-      openDashboard();
       showDashboardNotice('Book a ticket first so the emergency teams know your seat.');
       return;
     }
@@ -1185,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function completePurchase() {
+  async function completePurchase() {
     // Final guard: block if email already has a ticket
     if (hasTicketForEmail(getCurrentUserEmail())) {
       closeBookingFlow();
@@ -1194,22 +1241,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const newTickets = state.selectedSeats.map(createTicketRecord);
-    state.tickets = [...newTickets, ...state.tickets];
-    state.selectedSeats = [];
-    saveTickets();
-    renderAllDynamicData();
-
-    elements.bookingMain.style.display = 'none';
-    elements.bookingSidebar.style.display = 'none';
-    elements.ticketView.classList.remove('hidden');
-    updateBreadcrumb(3);
-
-    elements.successSub.textContent = '1 ticket saved in My Tickets. Entering Matchday Portal...';
     
-    // Cinematic transition to matchday portal
-    setTimeout(() => {
-      portalTransitionToServices();
-    }, 1500);
+    try {
+      for (const t of newTickets) {
+        await api.post('/tickets', {
+          ownerEmail: t.ownerEmail,
+          price: t.price,
+          sectionShort: t.sectionShort,
+          row: t.row,
+          seatNumber: t.seatNumber
+        });
+      }
+
+      state.selectedSeats = [];
+      await renderAllDynamicData();
+
+      elements.bookingMain.style.display = 'none';
+      elements.bookingSidebar.style.display = 'none';
+      elements.ticketView.classList.remove('hidden');
+      updateBreadcrumb(3);
+
+      elements.successSub.textContent = `${newTickets.length} ticket(s) saved in My Tickets. Entering Matchday Portal...`;
+      
+      // Cinematic transition to matchday portal
+      setTimeout(() => {
+        portalTransitionToServices();
+      }, 1500);
+    } catch (err) {
+      console.error('Ticket purchase failed:', err);
+      alert(err.message || 'Failed to complete purchase. Please try again.');
+    }
   }
 
   function portalTransitionToServices() {
@@ -1287,31 +1348,75 @@ document.addEventListener('DOMContentLoaded', () => {
     closeServiceModal();
   });
 
-  elements.authForm.addEventListener('submit', (event) => {
+  if (elements.toggleSignupBtn && elements.toggleSigninBtn) {
+    elements.toggleSignupBtn.addEventListener('click', () => {
+      elements.authForm.dataset.mode = 'signup';
+      elements.toggleSignupBtn.classList.add('active');
+      elements.toggleSigninBtn.classList.remove('active');
+      elements.authSubmitBtn.textContent = 'Create Account';
+      elements.authErrorMsg.classList.add('hidden');
+      elements.authName.required = true;
+    });
+
+    elements.toggleSigninBtn.addEventListener('click', () => {
+      elements.authForm.dataset.mode = 'signin';
+      elements.toggleSigninBtn.classList.add('active');
+      elements.toggleSignupBtn.classList.remove('active');
+      elements.authSubmitBtn.textContent = 'Sign In';
+      elements.authErrorMsg.classList.add('hidden');
+      elements.authName.required = false;
+    });
+  }
+
+  elements.authForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    state.user = {
-      name: elements.authName.value.trim(),
-      email: elements.authEmail.value.trim().toLowerCase(),
-      phone: elements.authPhone.value.trim()
-    };
+    if (elements.authErrorMsg) elements.authErrorMsg.classList.add('hidden');
+    
+    const mode = elements.authForm.dataset.mode || 'signup';
+    const name = elements.authName.value.trim();
+    const email = elements.authEmail.value.trim().toLowerCase();
+    const phone = elements.authPhone.value.trim();
+    const password = elements.authPassword.value;
 
-    saveUser();
-    closeAuthModal(false);
-    renderAllDynamicData();
-    updateAppView();
+    elements.authSubmitBtn.disabled = true;
+    const originalBtnText = elements.authSubmitBtn.textContent;
+    elements.authSubmitBtn.textContent = 'Please wait...';
 
-    // If this email already has a ticket, go straight to dashboard
-    if (hasTicketForEmail(state.user.email)) {
-      pendingAction = null;
-      openDashboard();
-      return;
-    }
+    try {
+      if (mode === 'signup') {
+        const res = await api.post('/auth/signup', { name, email, phone, password });
+        state.user = res.user;
+      } else {
+        const res = await api.post('/auth/login', { email, password });
+        state.user = res.user;
+      }
 
-    if (pendingAction) {
-      const action = pendingAction;
-      pendingAction = null;
-      action();
+      saveUser();
+      closeAuthModal(false);
+      renderAllDynamicData();
+      updateAppView();
+
+      // If this email already has a ticket, go straight to dashboard
+      if (hasTicketForEmail(state.user.email)) {
+        pendingAction = null;
+        openDashboard();
+        return;
+      }
+
+      if (pendingAction) {
+        const action = pendingAction;
+        pendingAction = null;
+        action();
+      }
+    } catch (err) {
+      if (elements.authErrorMsg) {
+        elements.authErrorMsg.textContent = err.message || 'Authentication failed.';
+        elements.authErrorMsg.classList.remove('hidden');
+      }
+    } finally {
+      elements.authSubmitBtn.disabled = false;
+      elements.authSubmitBtn.textContent = originalBtnText;
     }
   });
 
@@ -1326,6 +1431,59 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAllDynamicData();
     updateAppView();
   });
+
+  // Password change handler
+  if (elements.authChangePwBtn) {
+    elements.authChangePwBtn.addEventListener('click', async () => {
+      if (!state.user?.email) return;
+      
+      const currentPw = elements.authPassword?.value || '';
+      const newPw = elements.authNewPassword?.value || '';
+
+      if (!currentPw) {
+        if (elements.authErrorMsg) {
+          elements.authErrorMsg.textContent = 'Enter your current password.';
+          elements.authErrorMsg.classList.remove('hidden');
+        }
+        return;
+      }
+      if (!newPw || newPw.length < 4) {
+        if (elements.authErrorMsg) {
+          elements.authErrorMsg.textContent = 'New password must be at least 4 characters.';
+          elements.authErrorMsg.classList.remove('hidden');
+        }
+        return;
+      }
+
+      elements.authChangePwBtn.disabled = true;
+      elements.authChangePwBtn.textContent = 'Updating...';
+      if (elements.authErrorMsg) elements.authErrorMsg.classList.add('hidden');
+      if (elements.authSuccessMsg) elements.authSuccessMsg.classList.add('hidden');
+
+      try {
+        await api.put('/auth/password', {
+          email: state.user.email,
+          currentPassword: currentPw,
+          newPassword: newPw
+        });
+        
+        elements.authPassword.value = '';
+        elements.authNewPassword.value = '';
+        if (elements.authSuccessMsg) {
+          elements.authSuccessMsg.textContent = '✓ Password updated successfully!';
+          elements.authSuccessMsg.classList.remove('hidden');
+        }
+      } catch (err) {
+        if (elements.authErrorMsg) {
+          elements.authErrorMsg.textContent = err.message || 'Failed to update password.';
+          elements.authErrorMsg.classList.remove('hidden');
+        }
+      } finally {
+        elements.authChangePwBtn.disabled = false;
+        elements.authChangePwBtn.textContent = 'Change Password';
+      }
+    });
+  }
 
   document.querySelectorAll('.stadium-section').forEach((section) => {
     section.addEventListener('click', (event) => {
@@ -1416,35 +1574,64 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   elements.emergencyBtns.forEach((btn) => {
-    btn.addEventListener('click', (event) => {
+    btn.addEventListener('click', async (event) => {
       const type = event.currentTarget.getAttribute('data-type');
       const currentTickets = getCurrentUserTickets();
       const currentTicket = currentTickets[0];
 
       if (!currentTicket) return;
 
+      // Prevent double click
+      if (btn.classList.contains('is-sending')) return;
+
+      // Check if user already has an active request of this type
+      const existingOfType = state.serviceRequests.find(
+        r => r.kind === 'assistance' && 
+             (r.unitType || '').toLowerCase() === type.toLowerCase() &&
+             r.ownerEmail === state.user?.email &&
+             r.workflowStatus !== 'DONE'
+      );
+      if (existingOfType) {
+        // Pulse the button red to indicate already sent
+        btn.classList.add('already-sent');
+        setTimeout(() => btn.classList.remove('already-sent'), 1500);
+        showDashboardNotice(`You already have an active ${type.toLowerCase()} request. Please wait for a response.`);
+        closeServiceModal();
+        openDashboard('services');
+        return;
+      }
+
+      // Interactive feedback: show sending state
+      btn.classList.add('is-sending');
       elements.emergencyCard.classList.add('sending');
 
-      window.setTimeout(() => {
-        state.serviceRequests = [
-          {
-            id: `REQ-${Date.now()}`,
-            kind: 'assistance',
-            title: `${type} Assistance`,
-            subtitle: getTicketSeatLabel(currentTicket),
-            status: `${type} team dispatched`,
-            details: `Priority High`,
-            notes: `Live Location Shared.`,
-            ticketId: currentTicket.ticketId,
-            ownerEmail: currentTicket.ownerEmail,
-            createdAt: new Date().toISOString()
-          },
-          ...state.serviceRequests
-        ];
+      const newReq = {
+        kind: 'assistance',
+        title: `${type} Assistance`,
+        subtitle: getTicketSeatLabel(currentTicket),
+        status: 'Pending',
+        workflowStatus: 'PENDING',
+        details: `Priority High`,
+        notes: 'Live location shared from the user portal.',
+        ticketId: currentTicket.ticketId,
+        ownerEmail: currentTicket.ownerEmail,
+        ownerName: currentTicket.ownerName,
+        ownerPhone: state.user?.phone || '',
+        unitType: type.toLowerCase(),
+        section: currentTicket.sectionShort,
+        row: currentTicket.row,
+        seat: currentTicket.seatNumber,
+        source: 'user-portal',
+        risk: 'HIGH'
+      };
 
-        saveServiceRequests();
+      try {
+        const savedReq = await api.post('/requests', newReq);
+        state.serviceRequests.unshift(savedReq);
         renderServiceRequests();
 
+        btn.classList.remove('is-sending');
+        btn.classList.add('is-sent');
         elements.emergencyCard.classList.remove('sending');
         elements.emergencyCard.classList.add('success-state');
         elements.emergencyHeader.classList.add('hidden');
@@ -1455,9 +1642,15 @@ document.addEventListener('DOMContentLoaded', () => {
           closeServiceModal();
           openDashboard();
           showDashboardNotice(`${type} request sent to stadium control.`);
+          // Reset button state after modal closes
+          btn.classList.remove('is-sent');
         }, 4000);
-
-      }, 800);
+      } catch (err) {
+        console.error('Failed to send emergency request:', err);
+        btn.classList.remove('is-sending');
+        elements.emergencyCard.classList.remove('sending');
+        showDashboardNotice('Failed to send emergency request. Please try again or find a steward.');
+      }
     });
   });
 
@@ -1524,10 +1717,55 @@ document.addEventListener('DOMContentLoaded', () => {
     syncIndexRoute();
   });
 
-  initIntro();
-  updateTimer();
-  window.setInterval(updateTimer, 1000);
-  updateServiceModal('food');
-  renderAllDynamicData();
-  updateOrderSummary();
+  window.addEventListener('storage', (event) => {
+    if (![STORAGE_KEYS.user, STORAGE_KEYS.tickets, STORAGE_KEYS.services].includes(event.key)) {
+      return;
+    }
+
+    state.user = readStorage(STORAGE_KEYS.user, null);
+    state.tickets = readStorage(STORAGE_KEYS.tickets, []);
+    renderAllDynamicData();
+    updateAppView();
+  });
+
+  async function loadServiceRequests() {
+    if (!state.user?.email) return;
+    try {
+      state.serviceRequests = await api.get(`/requests?email=${encodeURIComponent(state.user.email)}`);
+      renderServiceRequests();
+    } catch (err) {
+      console.error('Failed to load service requests:', err);
+    }
+  }
+
+  api.connectSSE();
+  api.on('new-request', (req) => {
+    // Only add to state if it belongs to current user
+    if (state.user?.email && req.ownerEmail === state.user.email) {
+      if (!state.serviceRequests.find(r => r.id == req.id)) {
+        state.serviceRequests.unshift(req);
+        renderServiceRequests();
+      }
+    }
+  });
+
+  api.on('update-request', (req) => {
+    // Only update if it belongs to current user
+    if (state.user?.email && req.ownerEmail === state.user.email) {
+      const index = state.serviceRequests.findIndex(r => r.id == req.id);
+      if (index !== -1) {
+        state.serviceRequests[index] = req;
+        renderServiceRequests();
+      }
+    }
+  });
+
+  // Initial Data Load
+  (async () => {
+    await renderAllDynamicData();
+    initIntro();
+    updateTimer();
+    window.setInterval(updateTimer, 1000);
+    updateOrderSummary();
+  })();
 });
