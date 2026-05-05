@@ -584,7 +584,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildServiceRequestMarkup(request) {
-    const notes = escapeHtml(request.notes || 'No extra details added.').replace(/\n/g, '<br>');
+    const noteParts = [request.notes || 'No extra details added.'];
+
+    if (request.kind === 'food' && request.pickupMessage) {
+      noteParts.push(request.pickupMessage);
+    }
+
+    const notes = escapeHtml(noteParts.filter(Boolean).join('\n')).replace(/\n/g, '<br>');
 
     return `
       <div class="service-request-card ${escapeHtml(request.kind)}">
@@ -625,6 +631,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.serviceRequestsList.innerHTML = requests.map(buildServiceRequestMarkup).join('');
     updateServiceButtonState();
+  }
+
+  function getNextFoodOrderNumber() {
+    const foodOrderNumbers = state.serviceRequests
+      .filter((request) => request.kind === 'food')
+      .map((request) => Number.parseInt(request.orderNumber, 10))
+      .filter((value) => Number.isFinite(value));
+
+    return (foodOrderNumbers.length ? Math.max(...foodOrderNumbers) : 0) + 1;
+  }
+
+  function notifyReadyFoodOrders(previousRequests, nextRequests) {
+    const readyNow = nextRequests.filter((request) => (
+      request.kind === 'food'
+      && request.ownerEmail === getCurrentUserEmail()
+      && request.status === 'Ready for pickup'
+    ));
+
+    const previousReadyIds = new Set(
+      previousRequests
+        .filter((request) => request.kind === 'food' && request.status === 'Ready for pickup')
+        .map((request) => request.id)
+    );
+
+    const hasNewReadyOrder = readyNow.some((request) => !previousReadyIds.has(request.id));
+
+    if (hasNewReadyOrder) {
+      showDashboardNotice('Your order is ready. You can collect it from the restaurant now.');
+    }
   }
 
     // No more populateServiceTicketOptions required here
@@ -977,6 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const newReq = {
       id: 'REQ-' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+      orderNumber: getNextFoodOrderNumber(),
       kind: 'food',
       ticketId: selectedTicketId,
       ownerEmail: getCurrentUserEmail(),
@@ -1556,9 +1592,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const previousServiceRequests = state.serviceRequests;
+
     state.user = readStorage(STORAGE_KEYS.user, null);
     state.tickets = readStorage(STORAGE_KEYS.tickets, []);
     state.serviceRequests = readStorage(STORAGE_KEYS.services, []);
+
+    if (event.key === STORAGE_KEYS.services) {
+      notifyReadyFoodOrders(previousServiceRequests, state.serviceRequests);
+    }
+
     renderAllDynamicData();
     updateAppView();
   });
