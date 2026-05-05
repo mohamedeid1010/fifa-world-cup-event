@@ -238,6 +238,21 @@ body {
   color: #00d4ff;
 }
 
+.restaurant-sync-card strong {
+  color: #fbbf24;
+}
+
+.role-card.restaurant-card .role-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+  color: #fbbf24;
+}
+
+.role-card.restaurant-card:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 30px 56px rgba(245, 158, 11, 0.14);
+}
+
 .role-title {
   font-size: 16px;
   font-weight: bold;

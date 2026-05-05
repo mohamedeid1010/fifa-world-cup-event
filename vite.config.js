@@ -11,7 +11,8 @@ export default defineConfig({
         teams: resolve(__dirname, 'src/pages/teams.html'),
         controlCenter: resolve(__dirname, 'src/pages/control-center.html'),
         policeControl: resolve(__dirname, 'src/pages/police.html'),
-        medicalControl: resolve(__dirname, 'src/pages/active-dispatches.html')
+        medicalControl: resolve(__dirname, 'src/pages/active-dispatches.html'),
+        restaurantControl: resolve(__dirname, 'src/pages/restaurant.html')
       }
     }
   }
