@@ -101,7 +101,11 @@ function normalizeWorkflowStatus(serviceRequest) {
 
   const derivedStatus = String(serviceRequest.status || '').toLowerCase();
 
-  if (derivedStatus.includes('resolved') || derivedStatus.includes('done') || derivedStatus.includes('archived')) {
+  if (derivedStatus.includes('archived')) {
+    return 'ARCHIVED';
+  }
+
+  if (derivedStatus.includes('resolved') || derivedStatus.includes('done')) {
     return 'DONE';
   }
 
@@ -153,6 +157,10 @@ function getStatusClass(status) {
     return 'done';
   }
 
+  if (status === 'ARCHIVED') {
+    return 'archived';
+  }
+
   return 'pending';
 }
 
@@ -163,6 +171,10 @@ function getStatusLabel(status) {
 
   if (status === 'DONE') {
     return '✅ DONE';
+  }
+
+  if (status === 'ARCHIVED') {
+    return '📁 ARCHIVED';
   }
 
   return 'PENDING';
@@ -228,12 +240,13 @@ function getBoardData(config) {
     request.serviceRequest.source !== 'control-center'
     && !request.serviceRequest.controlQueuedAt
     && request.workflowStatus !== 'DONE'
+    && request.workflowStatus !== 'ARCHIVED'
   ));
 
   const active = relevantRequests
     .filter((request) => (
       (request.serviceRequest.controlQueuedAt || request.serviceRequest.source === 'control-center')
-      && request.workflowStatus !== 'DONE'
+      && request.workflowStatus !== 'ARCHIVED'
     ))
     .sort((left, right) => {
       const leftTime = left.serviceRequest.controlQueuedAt || left.requestTimestamp;
@@ -241,7 +254,7 @@ function getBoardData(config) {
       return new Date(rightTime) - new Date(leftTime);
     });
 
-  const archive = relevantRequests.filter((request) => request.workflowStatus === 'DONE');
+  const archive = relevantRequests.filter((request) => request.workflowStatus === 'ARCHIVED');
 
   return {
     user,
@@ -346,7 +359,7 @@ function createIncidentCard(request, config) {
       <p>Name: ${escapeHtml(request.userName)}</p>
       <p>Location: Section ${escapeHtml(request.section)} • Row ${escapeHtml(request.row)} • Seat ${escapeHtml(request.seat)}</p>
       <p>Ticket: ${escapeHtml(request.ticketId)}</p>
-      <p class="time-elapsed">ELAPSED: ${escapeHtml(getElapsedText(request.requestTimestamp))}</p>
+      <p class="time-elapsed">TIME: ${escapeHtml(formatClock(request.requestTimestamp))}</p>
     </div>
     <div class="incident-status">
       <span class="incident-unit">${escapeHtml(request.unit)}</span>
@@ -387,7 +400,7 @@ function createArchiveCard(request, config) {
     <div class="incident-info">
       <p>Name: ${escapeHtml(request.userName)}</p>
       <p>Location: Section ${escapeHtml(request.section)} • Row ${escapeHtml(request.row)} • Seat ${escapeHtml(request.seat)}</p>
-      <p class="time-elapsed">ELAPSED: ${escapeHtml(getElapsedText(request.requestTimestamp))}</p>
+      <p class="time-elapsed">TIME: ${escapeHtml(formatClock(request.requestTimestamp))}</p>
     </div>
     <div class="incident-status">
       <span class="incident-unit">${escapeHtml(request.unit)}</span>
@@ -487,7 +500,7 @@ export function initControlBoard(config) {
         return;
       }
 
-      elapsedNode.textContent = `ELAPSED: ${getElapsedText(card.dataset.requestTimestamp)}`;
+      elapsedNode.textContent = `TIME: ${formatClock(card.dataset.requestTimestamp)}`;
     });
   };
 
@@ -718,7 +731,7 @@ export function initControlBoard(config) {
 
       updateServiceRequest(requestId, (serviceRequest) => ({
         ...serviceRequest,
-        workflowStatus: 'DONE',
+        workflowStatus: 'ARCHIVED',
         status: config.statusText.archived,
         archivedAt: timestamp,
         lastTouchedAt: timestamp

@@ -8,7 +8,7 @@ initControlBoard({
   emptySummaryTitle: 'NO INCOMING MEDICAL ALERTS',
   riskLabels: {
     HIGH: 'High risk',
-    RISK: 'High',
+    RISK: 'Risk',
     NORMAL: 'Normal'
   },
   statusText: {

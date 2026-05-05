@@ -4,7 +4,7 @@ initControlBoard({
   unitType: 'police',
   unitLabel: 'POLICE CONTROL UNIT',
   defaultUnit: 'UNIT 12A',
-  defaultIncident: 'UNAUTHORIZED ACCESS',
+  defaultIncident: 'INCIDENT TYPE',
   emptySummaryTitle: 'NO INCOMING POLICE ALERTS',
   riskLabels: {
     HIGH: 'High threat',
