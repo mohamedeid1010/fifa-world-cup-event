@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Active Dispatches</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style/police.css" >
+    <link rel="stylesheet" href="/src/style/board.css" >
+  </head>
+  <body>
+    <div id="app" class="dispatches-page">
+      <!-- Main Content -->
+      <div class="main-panel">
+        <div class="control-topbar">
+          <div class="control-links">
+            <a class="board-link" href="/src/pages/control-center.html">Control Hub</a>
+            <a class="board-link board-link-primary" href="/">Back To Demo</a>
+          </div>
+          <div class="control-sync">
+            <span class="sync-chip">Live Sync</span>
+            <span id="control-sync-meta">Waiting for linked police requests.</span>
+          </div>
+        </div>
+
+        <div class="control-overview">
+          <div class="overview-card">
+            <span class="overview-label">Tickets In Portal</span>
+            <strong id="board-ticket-count" class="overview-value">0</strong>
+            <span class="overview-subvalue">Shared ticket inventory</span>
+          </div>
+          <div class="overview-card">
+            <span class="overview-label">Open Requests</span>
+            <strong id="board-request-count" class="overview-value">0</strong>
+            <span class="overview-subvalue">Police lane backlog</span>
+          </div>
+          <div class="overview-card">
+            <span class="overview-label">Last Sync</span>
+            <strong id="board-sync-time" class="overview-value">Waiting</strong>
+            <span class="overview-subvalue">Storage-backed live feed</span>
+          </div>
+        </div>
+
+        <!-- Header -->
+        <header class="dispatch-header">
+          <h1 class="header-title"> POLICE CONTROL UNIT</h1>
+          <div class="header-controls">
+            <input type="text" class="search-bar" placeholder="Search incidents...">
+           
+            <button class="new-dispatch-btn">+ NEW DISPATCH</button>
+          </div>
+        </header>
+
+        <!-- Active Dispatches Section -->
+        <div class="dispatches-container">
+          <div class="dispatch-banner">
+            <span class="dispatch-count">ACTIVE DISPATCHES</span>
+            <span class="dispatch-status"> • 0 Done • 0 Processing •  0 PENDING</span>
+          </div>
+
+        
+
+            <!-- Dispatch Content -->
+            <div class="dispatch-item">
+              <div class="dispatch-content">
+                <div class="incident-summary-card" id="incomingRequestCard">
+                  <div class="incident-card-header">
+                    <div class="incident-avatar">AV</div>
+                    <div>
+                      <span class="incident-card-label" id="summaryLabel">INCOMING REQUEST</span>
+                      <h3 class="incident-card-title" id="summaryUserName">ALEXANDER VANCE</h3>
+                      <p class="incident-card-note" id="summaryNote">Review the newest linked request, adjust the risk level, then add it to the active queue.</p>
+                    </div>
+                  </div>
+                  <div class="incident-card-body">
+                    <div class="incident-card-row"><span>Section</span><strong id="summarySection">402</strong></div>
+                    <div class="incident-card-row"><span>Row</span><strong id="summaryRow">L</strong></div>
+                    <div class="incident-card-row"><span>Seat</span><strong id="summarySeat">24</strong></div>
+                    <div class="incident-card-row"><span>Issue</span><input type="text" id="summaryIncidentType" value="UNAUTHORIZED ACCESS" class="editable-input"></div>
+                    <div class="incident-card-row"><span>Elapsed</span><strong id="summaryElapsed">04:12M</strong></div>
+                    <div class="incident-card-row"><span>Unit</span><strong id="summaryUnit">UNIT 12A</strong></div>
+                    <div class="incident-card-row"><span>Risk Level</span><strong id="currentRiskDisplay" class="risk-level-high">High threat</strong></div>
+                  </div>
+                  <div class="risk-selector">
+                    <button class="risk-btn active" data-risk="HIGH">High threat</button>
+                    <button class="risk-btn" data-risk="RISK">Moderate threat</button>
+                    <button class="risk-btn" data-risk="NORMAL">Low threat</button>
+                  </div>
+                  <button class="add-request-btn" id="addRequestBtn">ADD REQUEST TO QUEUE</button>
+                </div>
+              </div>
+            </div>
+
+          <!-- Priority Queue Section -->
+          <div class="priority-queue" id="priorityQueue">
+            <h3 class="queue-title">PRIORITY QUEUE</h3>
+          </div>
+
+          <div class="archive-section collapsed" id="archiveSection">
+            <div class="archive-header">
+              <h3 class="queue-title">ARCHIVE</h3>
+              <button type="button" class="archive-toggle-btn" id="archiveToggleBtn" aria-expanded="false" aria-label="Show archive">📁</button>
+            </div>
+            <div class="archive-queue hidden" id="archiveQueue"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- New Dispatch Modal -->
+    <div id="newDispatchModal" class="dispatch-modal" role="dialog" aria-labelledby="dispatchModalTitle" aria-hidden="true">
+      <div class="dispatch-modal-content">
+        <div class="dispatch-modal-header">
+          <h2 id="dispatchModalTitle" class="dispatch-modal-title">CREATE NEW DISPATCH</h2>
+          <button class="dispatch-modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <form id="newDispatchForm" class="dispatch-form" novalidate>
+          <div class="form-group">
+            <label for="dispatchUserName">User Name</label>
+            <input type="text" id="dispatchUserName" name="userName" required autocomplete="name">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dispatchSection">Section</label>
+              <input type="text" id="dispatchSection" name="section" required>
+            </div>
+            <div class="form-group">
+              <label for="dispatchRow">Row</label>
+              <input type="text" id="dispatchRow" name="row" required>
+            </div>
+            <div class="form-group">
+              <label for="dispatchSeat">Seat</label>
+              <input type="text" id="dispatchSeat" name="seat" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="dispatchIncidentType">Incident Type</label>
+            <input type="text" id="dispatchIncidentType" name="incidentType" placeholder="Enter incident type" required>
+          </div>
+          <div class="form-group">
+            <label for="dispatchUnit">Assigned Unit</label>
+            <input type="text" id="dispatchUnit" name="unit" placeholder="e.g., UNIT 12A" required>
+          </div>
+          <div class="form-group">
+            <label>Risk Level</label>
+            <div class="risk-selector-modal" role="radiogroup" aria-label="Risk Level">
+              <button type="button" class="risk-btn-modal active" data-risk="HIGH" aria-pressed="true">High risk</button>
+              <button type="button" class="risk-btn-modal" data-risk="RISK" aria-pressed="false">High</button>
+              <button type="button" class="risk-btn-modal" data-risk="NORMAL" aria-pressed="false">Normal</button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" id="cancelDispatchBtn">Cancel</button>
+            <button type="submit" class="create-btn">Create Dispatch</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/js/police.js"></script>
+  </body>
+</html>

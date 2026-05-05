@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "demo": "vite --open /",
     "build": "vite build",
     "preview": "vite preview",
     "fix:main": "node scripts/fix-main.cjs",
