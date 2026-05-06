@@ -84,7 +84,7 @@ CREATE TABLE Seat (
     FOREIGN KEY (row_id) REFERENCES RowTable(row_id)
 );
 
--- Table: Ticket
+-- Table: Ticket dhididikbjbdkjbni
 CREATE TABLE Ticket (
     ticket_id INT PRIMARY KEY,
     booked_at DATETIME DEFAULT GETDATE(),
@@ -125,6 +125,9 @@ CREATE TABLE FoodOrder (
     user_id INT,
     item_id INT,
     status VARCHAR(30) DEFAULT 'Pending',
+    controlQueuedAt VARCHAR(50),
+    handledAt varchar(50),
+    archivedAt VARCHAR(50),
     notes VARCHAR(MAX) DEFAULT '',
     requested_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (user_id) REFERENCES Attendee(user_id),

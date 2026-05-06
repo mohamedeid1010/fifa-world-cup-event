@@ -8,7 +8,8 @@ const CONTROL_ACCESS_KEY = 'fifa-control-access';
 
 const ACCESS_CODES = {
   police: '123456',
-  medical: '654321'
+  medical: '654321',
+  restaurant: '246810'
 };
 
 let selectedRole = null;
@@ -44,6 +45,9 @@ function readStorage(key, fallback) {
 
 function countRequestsByUnit(serviceRequests, unitType) {
   return serviceRequests.filter((request) => {
+    if (unitType === 'restaurant') {
+      return request.kind === 'food';
+    }
     if (request.kind !== 'assistance') {
       return false;
     }
@@ -87,13 +91,13 @@ async function renderPortalSync() {
   } catch (err) {
     console.error('Failed to load service requests', err);
   }
-
   const latestRequest = serviceRequests[0];
   const latestSync = latestRequest?.lastTouchedAt || latestRequest?.handledAt || latestRequest?.archivedAt || latestRequest?.controlQueuedAt || latestRequest?.createdAt || tickets[0]?.purchasedAt;
 
   document.getElementById('linked-ticket-count').textContent = String(tickets.length);
   document.getElementById('linked-police-count').textContent = String(countRequestsByUnit(serviceRequests, 'police'));
   document.getElementById('linked-medical-count').textContent = String(countRequestsByUnit(serviceRequests, 'ambulance'));
+  document.getElementById('linked-restaurant-count').textContent = String(countRequestsByUnit(serviceRequests, 'restaurant'));
   document.getElementById('linked-last-sync').textContent = formatSyncTime(latestSync);
 }
 
@@ -113,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const policeCard = document.querySelector('.police-card');
   const medicalCard = document.querySelector('.medical-card');
+  const restaurantCard = document.querySelector('.restaurant-card');
   const codeModal = document.getElementById('codeModal');
   const codeInput = document.getElementById('codeInput');
   const codeDisplay = document.getElementById('codeDisplay');
@@ -135,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     codeDisplay.textContent = '○ ○ ○ ○ ○ ○';
     codeMessage.textContent = '';
     codeMessage.classList.remove('error', 'success');
-    codeModal.classList.remove('medical', 'police');
+    codeModal.classList.remove('medical', 'police', 'restaurant');
     codeModal.classList.add('active', role);
     window.setTimeout(() => codeInput.focus(), 80);
   };
@@ -160,7 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
     window.setTimeout(() => {
       window.location.href = selectedRole === 'police'
         ? '/src/pages/police.html'
-        : '/src/pages/active-dispatches.html';
+        : selectedRole === 'medical'
+          ? '/src/pages/active-dispatches.html'
+          : '/src/pages/restaurant.html';
     }, 700);
   };
 
@@ -174,6 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
     showCodeModal('medical', 'MEDICAL RESPONSE');
   });
 
+  restaurantCard?.addEventListener('click', () => {
+    showCodeModal('restaurant', 'RESTAURANT ORDERS');
+  });
   codeInput.addEventListener('input', (event) => {
     const enteredLength = event.target.value.length;
     codeDisplay.textContent = '● '.repeat(enteredLength) + '○ '.repeat(6 - enteredLength);

@@ -351,11 +351,11 @@ router.get('/requests', async (req, res) => {
         fo.notes,
         'user-portal' as source,
         fo.requested_at as createdAt,
-        NULL as controlQueuedAt,
+        fo.controlQueuedAt,
         NULL as assignedUnit,
-        NULL as handledAt,
-        NULL as archivedAt,
-        NULL as lastTouchedAt,
+        fo.handledAt,
+        fo.archivedAt,
+        GETDATE() as lastTouchedAt,
         s.sector_name as section,
         rt.row_num as row,
         st.seat_id as seat,
@@ -497,14 +497,29 @@ router.put('/requests/:id', async (req, res) => {
     const pool = await getPool();
     const updates = req.body;
     
-    const request = pool.request();
-    request.input('id', id);
+    // Determine which table to update
+    const typeCheck = await pool.request().input('id', id).query(`
+      SELECT 'EmergencyRequest' as tbl FROM EmergencyRequest WHERE emergency_id = @id
+      UNION
+      SELECT 'FoodOrder' as tbl FROM FoodOrder WHERE order_id = @id
+    `);
     
+    if (typeCheck.recordset.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    const tableName = typeCheck.recordset[0].tbl;
+    const idColumn = tableName === 'EmergencyRequest' ? 'emergency_id' : 'order_id';
+
     // Whitelist of columns that can be updated dynamically
     const allowedColumns = new Set(['status', 'workflowStatus', 'risk', 'notes', 'details', 'source', 'type', 'controlQueuedAt', 'assignedUnit', 'handledAt', 'archivedAt']);
     const skipKeys = new Set(['id', 'createdAt', 'lastTouchedAt', 'ownerEmail', 'ownerName', 'section', 'row', 'seat', 'ticketId', 'kind', 'unitType', 'title', 'subtitle']);
     
-    let setClauses = ["lastTouchedAt = GETDATE()"];
+    let setClauses = [];
+    if (tableName === 'EmergencyRequest') {
+      setClauses.push("lastTouchedAt = GETDATE()");
+    }
+
     for (const [key, value] of Object.entries(updates)) {
       if (skipKeys.has(key) || !allowedColumns.has(key)) continue;
       
@@ -512,32 +527,18 @@ router.put('/requests/:id', async (req, res) => {
       setClauses.push(`${key} = @${key}`);
     }
     
-    const query = `UPDATE EmergencyRequest SET ${setClauses.join(', ')} WHERE emergency_id = @id`;
+    const query = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${idColumn} = @id`;
     await request.query(query);
 
     // Fetch full joined record for broadcast
     const broadcastQuery = `
       SELECT 
-        er.emergency_id as id,
-        'assistance' as kind,
-        er.type as unitType,
-        p.first_name + ' ' + p.last_name as ownerName,
-        p.email as ownerEmail,
-        er.status,
-        er.workflowStatus,
-        er.risk,
-        er.details,
-        er.notes,
-        er.source,
-        er.requested_at as createdAt,
-        er.controlQueuedAt,
-        er.assignedUnit,
-        er.handledAt,
-        er.archivedAt,
-        er.lastTouchedAt,
-        s.sector_name as section,
-        rt.row_num as row,
-        st.seat_id as seat
+        er.emergency_id as id, 'assistance' as kind, er.type as unitType,
+        p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
+        er.status, er.workflowStatus, er.risk, er.details, er.notes, er.source,
+        er.requested_at as createdAt, er.controlQueuedAt, er.assignedUnit,
+        er.handledAt, er.archivedAt, er.lastTouchedAt,
+        s.sector_name as section, rt.row_num as row, st.seat_id as seat
       FROM EmergencyRequest er
       JOIN Person p ON er.user_id = p.user_id
       LEFT JOIN Ticket t ON p.user_id = t.user_id
@@ -545,6 +546,25 @@ router.put('/requests/:id', async (req, res) => {
       LEFT JOIN RowTable rt ON st.row_id = rt.row_id
       LEFT JOIN Sector s ON rt.sector_id = s.sector_id
       WHERE er.emergency_id = @id
+      
+      UNION ALL
+      
+      SELECT 
+        fo.order_id as id, 'food' as kind, 'restaurant' as unitType,
+        p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
+        fo.status, 'PENDING' as workflowStatus, 'NORMAL' as risk,
+        fi.name as details, fo.notes, 'user-portal' as source,
+        fo.requested_at as createdAt, fo.controlQueuedAt, NULL as assignedUnit,
+        fo.handledAt, fo.archivedAt, GETDATE() as lastTouchedAt,
+        s.sector_name as section, rt.row_num as row, st.seat_id as seat
+      FROM FoodOrder fo
+      JOIN Person p ON fo.user_id = p.user_id
+      JOIN FoodItem fi ON fo.item_id = fi.item_id
+      LEFT JOIN Ticket t ON p.user_id = t.user_id
+      LEFT JOIN Seat st ON t.seat_id = st.seat_id
+      LEFT JOIN RowTable rt ON st.row_id = rt.row_id
+      LEFT JOIN Sector s ON rt.sector_id = s.sector_id
+      WHERE fo.order_id = @id
     `;
 
     const broadcastResult = await pool.request()
@@ -596,6 +616,33 @@ router.post('/food-orders', async (req, res) => {
         .input('itemId', itemId)
         .input('notes', notes || '')
         .query('INSERT INTO FoodOrder (order_id, user_id, item_id, notes, status) VALUES (@orderId, @userId, @itemId, @notes, \'Pending\')');
+
+      // Fetch the order for broadcast
+      const orderRes = await pool.request()
+        .input('id', newOrderId)
+        .query(`
+          SELECT 
+            fo.order_id as id, 'food' as kind, 'restaurant' as unitType,
+            p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
+            fo.status, 'PENDING' as workflowStatus, 'NORMAL' as risk,
+            fi.name as details, fo.notes, 'user-portal' as source,
+            fo.requested_at as createdAt, fo.controlQueuedAt, NULL as assignedUnit,
+            fo.handledAt, fo.archivedAt, GETDATE() as lastTouchedAt,
+            s.sector_name as section, rt.row_num as row, st.seat_id as seat,
+            t.ticket_id as ticketId
+          FROM FoodOrder fo
+          JOIN Person p ON fo.user_id = p.user_id
+          JOIN FoodItem fi ON fo.item_id = fi.item_id
+          LEFT JOIN Ticket t ON p.user_id = t.user_id
+          LEFT JOIN Seat st ON t.seat_id = st.seat_id
+          LEFT JOIN RowTable rt ON st.row_id = rt.row_id
+          LEFT JOIN Sector s ON rt.sector_id = s.sector_id
+          WHERE fo.order_id = @id
+        `);
+      
+      if (orderRes.recordset.length > 0) {
+        broadcastEvent('new-request', orderRes.recordset[0]);
+      }
     }
 
     res.status(201).json({ success: true });

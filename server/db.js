@@ -50,6 +50,9 @@ async function ensureSchema(pool) {
     `IF COL_LENGTH('FoodOrder','status') IS NULL ALTER TABLE FoodOrder ADD status VARCHAR(30) DEFAULT 'Pending'`,
     `IF COL_LENGTH('FoodOrder','notes') IS NULL ALTER TABLE FoodOrder ADD notes VARCHAR(MAX) DEFAULT ''`,
     `IF COL_LENGTH('FoodOrder','requested_at') IS NULL ALTER TABLE FoodOrder ADD requested_at DATETIME DEFAULT GETDATE()`,
+    `IF COL_LENGTH('FoodOrder','controlQueuedAt') IS NULL ALTER TABLE FoodOrder ADD controlQueuedAt DATETIME NULL`,
+    `IF COL_LENGTH('FoodOrder','handledAt') IS NULL ALTER TABLE FoodOrder ADD handledAt DATETIME NULL`,
+    `IF COL_LENGTH('FoodOrder','archivedAt') IS NULL ALTER TABLE FoodOrder ADD archivedAt DATETIME NULL`,
   ];
 
   for (const migration of migrations) {

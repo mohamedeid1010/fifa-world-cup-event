@@ -1,0 +1,557 @@
+/* ============================================================
+   Restaurant Control Board — Modern Clean Design
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0c0d10;
+  color: #f1f5f9;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page wrapper ─────────────────────────────────────────── */
+.rb-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+.rb-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(12, 13, 16, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rb-nav-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.rb-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.rb-nav-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.rb-nav-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.2;
+}
+
+.rb-nav-sub {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(241, 245, 249, 0.45);
+  letter-spacing: 0.04em;
+}
+
+.rb-nav-live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: rgba(241, 245, 249, 0.5);
+  white-space: nowrap;
+}
+
+.rb-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.08); }
+}
+
+.rb-nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.rb-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(241, 245, 249, 0.8);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.rb-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f1f5f9;
+}
+
+.rb-nav-btn-accent {
+  background: #f59e0b;
+  border-color: transparent;
+  color: #0c0d10;
+}
+
+.rb-nav-btn-accent:hover {
+  background: #fbbf24;
+  border-color: transparent;
+  color: #0c0d10;
+}
+
+/* ── Stats Strip ──────────────────────────────────────────── */
+.rb-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rb-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 48px;
+}
+
+.rb-stat-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.rb-stat-body strong {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.rb-stat-body span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(241, 245, 249, 0.4);
+}
+
+.rb-stat-waiting strong { color: #fbbf24; }
+.rb-stat-ready strong   { color: #4ade80; }
+.rb-stat-archive strong { color: #94a3b8; }
+
+.rb-stat-divider {
+  width: 1px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+/* ── Two-column layout ────────────────────────────────────── */
+.rb-columns {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.orders-layout { /* handled by rb-columns */ }
+
+/* ── Column / Panel ───────────────────────────────────────── */
+.rb-col {
+  background: #0c0d10;
+  padding: 28px 28px 32px;
+  min-height: 520px;
+}
+
+.orders-panel {
+  background: #0c0d10;
+  border: none;
+  border-radius: 0;
+  min-height: 520px;
+}
+
+.orders-panel-ready { border: none; }
+
+.rb-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rb-col-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rb-col-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rb-col-dot-waiting {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.rb-col-dot-ready {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.rb-col-title h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1;
+}
+
+/* ── Badge ────────────────────────────────────────────────── */
+.rb-badge,
+.panel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.panel-badge-ready {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.panel-badge-archive {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+
+/* ── Order List ───────────────────────────────────────────── */
+.rb-list,
+.orders-list {
+  display: grid;
+  gap: 10px;
+}
+
+/* ── Order Card ───────────────────────────────────────────── */
+.order-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.order-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.order-card-ready {
+  border-color: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.03);
+}
+
+.order-card-ready:hover {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.order-card-archive {
+  border-color: rgba(255, 255, 255, 0.04);
+  background: transparent;
+  opacity: 0.65;
+}
+
+/* ── Card Top Row ─────────────────────────────────────────── */
+.order-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.order-number {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(241, 245, 249, 0.65);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.order-status {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.order-status-ready {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.order-status-archive {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+
+/* ── Card Body ────────────────────────────────────────────── */
+.order-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.order-meta span {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(241, 245, 249, 0.55);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* ── Action Buttons ───────────────────────────────────────── */
+.order-done-btn,
+.order-collect-btn {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.order-done-btn:hover,
+.order-collect-btn:hover {
+  opacity: 0.85;
+}
+
+.order-done-btn:active,
+.order-collect-btn:active {
+  transform: scale(0.98);
+}
+
+.order-done-btn {
+  background: #f59e0b;
+  color: #0c0d10;
+}
+
+.order-collect-btn {
+  background: #22c55e;
+  color: #0c0d10;
+}
+
+/* ── Empty State ──────────────────────────────────────────── */
+.orders-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  border: 1px dashed rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  color: rgba(241, 245, 249, 0.3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ── Archive Toggle ───────────────────────────────────────── */
+.archive-toggle-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.archive-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 28px;
+  border: none;
+  background: transparent;
+  color: rgba(241, 245, 249, 0.4);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.archive-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(241, 245, 249, 0.7);
+}
+
+.rb-archive-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.archive-chevron {
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: transform 0.25s ease;
+}
+
+.archive-toggle-btn[aria-expanded="true"] .archive-chevron {
+  transform: rotate(180deg);
+}
+
+/* ── Archive Panel ────────────────────────────────────────── */
+.rb-archive-panel {
+  overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.15);
+  transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.orders-panel-archive {
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  padding: 24px 28px 28px;
+}
+
+.archive-panel-hidden {
+  max-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none;
+  border-width: 0 !important;
+}
+
+.rb-archive-panel:not(.archive-panel-hidden) {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.rb-archive-panel .orders-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .rb-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-panel {
+    min-height: auto;
+    padding: 22px 18px 26px;
+  }
+
+  .rb-stat { padding: 16px 28px; }
+
+  .rb-stat-body strong { font-size: 1.6rem; }
+
+  .rb-archive-panel .orders-list {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-panel-archive { padding: 20px 18px 24px; }
+
+  .rb-nav-live { display: none; }
+}
+
+@media (max-width: 560px) {
+  .rb-nav-inner { padding: 0 16px; }
+  .rb-stat { padding: 14px 18px; }
+  .rb-stat-icon { font-size: 1.2rem; }
+  .rb-stat-body strong { font-size: 1.3rem; }
+  .archive-toggle-btn { padding: 14px 18px; }
+}

@@ -1179,7 +1179,7 @@
 /* ─── Services Grid ─── */
 .dash-services-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   width: 100%;
 }
@@ -1238,6 +1238,7 @@
 
 .food-glow { background: rgba(15, 98, 254, 0.95); }
 .assist-glow { background: rgba(56, 189, 248, 0.92); }
+.ops-glow { background: rgba(15, 23, 42, 0.88); }
 
 .dash-service-icon {
   grid-area: icon;
@@ -1272,6 +1273,13 @@
   border: 1px solid rgba(56, 189, 248, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
   color: #0f62fe;
+}
+
+.ops-icon-bg {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  color: #0f172a;
 }
 
 .dash-service-card h4 {
@@ -1318,6 +1326,7 @@
   text-align: center;
   position: relative;
   z-index: 1;
+  text-decoration: none;
 }
 
 .dash-service-btn:hover {
@@ -1346,6 +1355,16 @@
 }
 .assist-btn:hover:not(:disabled) {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(240, 249, 255, 0.9));
+}
+
+.ops-btn {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(248, 250, 252, 0.92));
+  color: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.ops-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(241, 245, 249, 0.96));
 }
 
 .dash-service-btn svg {

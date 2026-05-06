@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Restaurant Orders</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="/src/style/restaurant.css" />
+	</head>
+	<body>
+		<div id="app" class="rb-page">
+
+			<!-- Top Nav -->
+			<header class="rb-nav">
+				<div class="rb-nav-inner">
+					<div class="rb-nav-brand">
+						<span class="rb-nav-icon">🍽️</span>
+						<div>
+							<span class="rb-nav-title">Restaurant</span>
+							<span class="rb-nav-sub">Order Control Board</span>
+						</div>
+					</div>
+					<div class="rb-nav-live">
+						<span class="rb-live-dot"></span>
+						<span>Live · <span id="restaurant-last-sync">Syncing…</span></span>
+					</div>
+					<nav class="rb-nav-links">
+                        <button class="rb-nav-btn" onclick="window.location.href='/src/pages/control-center.html'">
+                            ← RETURN TO CONTROL
+                        </button>
+					</nav>
+				</div>
+			</header>
+
+			<!-- Stats Strip -->
+			<section class="rb-stats" aria-label="Order overview">
+				<div class="rb-stat rb-stat-waiting">
+					<div class="rb-stat-icon">⏳</div>
+					<div class="rb-stat-body">
+						<strong id="waiting-count">0</strong>
+						<span>Waiting</span>
+					</div>
+				</div>
+				<div class="rb-stat-divider"></div>
+				<div class="rb-stat rb-stat-ready">
+					<div class="rb-stat-icon">✅</div>
+					<div class="rb-stat-body">
+						<strong id="ready-count">0</strong>
+						<span>Ready</span>
+					</div>
+				</div>
+				<div class="rb-stat-divider"></div>
+				<div class="rb-stat rb-stat-archive">
+					<div class="rb-stat-icon">📦</div>
+					<div class="rb-stat-body">
+						<strong id="archive-count">0</strong>
+						<span>Collected</span>
+					</div>
+				</div>
+			</section>
+
+			<!-- Main Columns -->
+			<main class="rb-columns orders-layout">
+
+				<!-- Waiting -->
+				<section class="rb-col orders-panel">
+					<div class="rb-col-head panel-head">
+						<div class="rb-col-title">
+							<span class="rb-col-dot rb-col-dot-waiting"></span>
+							<h2>Waiting</h2>
+						</div>
+						<span id="waiting-badge" class="rb-badge panel-badge">0</span>
+					</div>
+					<div id="waiting-orders" class="rb-list orders-list"></div>
+				</section>
+
+				<!-- Ready -->
+				<section class="rb-col orders-panel orders-panel-ready">
+					<div class="rb-col-head panel-head">
+						<div class="rb-col-title">
+							<span class="rb-col-dot rb-col-dot-ready"></span>
+							<h2>Ready for Pickup</h2>
+						</div>
+						<span id="ready-badge" class="rb-badge panel-badge panel-badge-ready">0</span>
+					</div>
+					<div id="ready-orders" class="rb-list orders-list"></div>
+				</section>
+
+			</main>
+
+			<!-- Archive Toggle -->
+			<div class="archive-toggle-row">
+				<button id="archive-toggle-btn" class="archive-toggle-btn" type="button" aria-expanded="false" aria-controls="archive-panel">
+					<span class="rb-archive-label">
+						<span>📦</span>
+						<span>Collected Orders Archive</span>
+					</span>
+					<span id="archive-badge" class="rb-badge panel-badge panel-badge-archive">0</span>
+					<svg class="archive-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+				</button>
+			</div>
+
+			<!-- Archive Panel -->
+			<section id="archive-panel" class="rb-archive-panel orders-panel orders-panel-archive archive-panel-hidden">
+				<div id="archive-orders" class="rb-list orders-list"></div>
+			</section>
+
+		</div>
+
+		<script type="module" src="/src/js/restaurant.js"></script>
+	</body>
+</html>

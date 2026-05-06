@@ -255,13 +255,15 @@
         <button id="close-auth-modal" class="close-btn" type="button">&times;</button>
         <div class="auth-modal-copy">
           <span class="auth-kicker">MATCHDAY ACCOUNT</span>
-          <h2 id="auth-modal-title">Create an Account</h2>
+          <h2 id="auth-modal-title">Sign in before you buy your ticket</h2>
           <p id="auth-modal-description">Save your booking in My Tickets and unlock food delivery plus police, ambulance, and stadium support requests on matchday.</p>
         </div>
+
         <div class="auth-toggle-container">
           <button id="toggle-signup" class="auth-toggle-btn active" type="button">Sign Up</button>
           <button id="toggle-signin" class="auth-toggle-btn" type="button">Sign In</button>
         </div>
+
         <form id="auth-form" class="auth-form" data-mode="signup">
           <div class="form-group signup-only">
             <label for="auth-name">Full Name</label>
@@ -279,15 +281,20 @@
             <label for="auth-password">Password</label>
             <input id="auth-password" name="password" type="password" placeholder="••••••••" required>
           </div>
-          <div class="form-group password-change-only" style="display:none;">
-            <label for="auth-new-password">New Password</label>
-            <input id="auth-new-password" name="newPassword" type="password" placeholder="Enter new password">
+
+          <div class="password-change-only" style="display: none;">
+            <div class="form-group">
+              <label for="auth-new-password">New Password</label>
+              <input id="auth-new-password" type="password" placeholder="Leave blank to keep current">
+            </div>
+            <button id="auth-change-pw-btn" class="auth-change-pw-btn" type="button">Change Password</button>
           </div>
+
           <div id="auth-error-msg" class="auth-error hidden"></div>
           <div id="auth-success-msg" class="auth-success hidden"></div>
+
           <div class="auth-actions">
-            <button id="auth-submit-btn" type="submit" class="auth-submit-btn">Create Account</button>
-            <button id="auth-change-pw-btn" type="button" class="auth-change-pw-btn" hidden>Change Password</button>
+            <button id="auth-submit-btn" type="submit" class="auth-submit-btn">Continue to Matchday</button>
             <button id="auth-logout-btn" type="button" class="auth-logout-btn" hidden>Log Out</button>
           </div>
         </form>

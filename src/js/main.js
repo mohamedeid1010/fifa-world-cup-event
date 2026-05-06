@@ -1,6 +1,24 @@
 import { api } from './api.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+  const USER_ACCESS_KEY = 'fifa-user-access';
+
+  const rawUserAccess = localStorage.getItem(USER_ACCESS_KEY);
+  let hasUserAccess = false;
+
+  if (rawUserAccess) {
+    try {
+      hasUserAccess = Boolean(JSON.parse(rawUserAccess)?.grantedAt);
+    } catch {
+      hasUserAccess = false;
+    }
+  }
+
+  if (!hasUserAccess) {
+    window.location.href = '/';
+    return;
+  }
+
   const STORAGE_KEYS = {
     user: 'fifa-matchday-user',
     tickets: 'fifa-matchday-tickets',
@@ -702,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (elements.navPortal) {
       elements.navPortal.textContent = 'Matchday';
-      elements.navPortal.setAttribute('href', hasTickets ? 'index.html#portal' : 'index.html#matches');
+      elements.navPortal.setAttribute('href', hasTickets ? '/src/pages/user-portal.html#portal' : '/src/pages/user-portal.html#matches');
     }
 
     // elements.navbar?.classList.toggle('pre-ticket-nav', !hasTickets); // Removed to keep navbar always visible
@@ -1495,7 +1513,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingAction = null;
     saveUser();
     closeAuthModal(false);
-    closeDashboard();
+    returnToMainRoute({ scrollBehavior: 'auto' });
     closeServiceModal();
     closeBookingFlow();
     renderAllDynamicData();

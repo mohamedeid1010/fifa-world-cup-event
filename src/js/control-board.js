@@ -670,6 +670,7 @@ export function initControlBoard(config) {
     elements.addRequestBtn.classList.add('added');
     window.setTimeout(() => {
       elements.addRequestBtn.classList.remove('added');
+
     }, 500);
   });
 
