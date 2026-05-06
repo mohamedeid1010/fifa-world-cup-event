@@ -51,6 +51,10 @@ function getOrderState(order) {
     return 'waiting';
 }
 
+function getDisplayOrderId(orderId) {
+	return String(orderId || '').replace(/^[^-]+-/, '') || '--';
+}
+
 function buildEmptyState(message) {
 	return `<div class="orders-empty">${escapeHtml(message)}</div>`;
 }
@@ -86,7 +90,7 @@ function buildOrderCard(order) {
 	return `
 		<article class="${cardClass}">
 			<div class="order-card-top">
-				<span class="order-number">#${String(order.id).padStart(2, '0')}</span>
+				<span class="order-number">#${escapeHtml(getDisplayOrderId(order.id).padStart(2, '0'))}</span>
 				<span class="${statusClass}">${statusLabel}</span>
 			</div>
 			<h3 class="order-title">${escapeHtml(order.details || 'Restaurant Order')}</h3>

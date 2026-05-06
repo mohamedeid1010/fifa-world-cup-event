@@ -1,29 +1,29 @@
 const EGYPT_ROSTER = [
-  { num: 1, name: 'Mohamed El Shenawy', pos: 'Goalkeeper', img: '/src/assets/players/elshenawy.png' },
-  { num: 3, name: 'Mohamed Hany', pos: 'Defender', img: '/src/assets/players/hany.png' },
-  { num: 6, name: 'Ahmed Hegazi', pos: 'Defender', img: '/src/assets/players/hegazi.png' },
-  { num: 2, name: 'Mohamed Abdelmonem', pos: 'Defender', img: '/src/assets/players/abdelmonem.png' },
-  { num: 13, name: 'Ahmed Fotouh', pos: 'Defender', img: '/src/assets/players/fotouh.png' },
-  { num: 17, name: 'Mohamed Elneny', pos: 'Midfielder', img: '/src/assets/players/elneny.png' },
-  { num: 8, name: 'Emam Ashour', pos: 'Midfielder', img: '/src/assets/players/ashour.png' },
-  { num: 5, name: 'Hamdi Fathi', pos: 'Midfielder', img: '/src/assets/players/fathi.png' },
-  { num: 10, name: 'Mohamed Salah (C)', pos: 'Forward', img: '/src/assets/players/salah.png' },
-  { num: 7, name: 'Trezeguet', pos: 'Forward', img: '/src/assets/players/trezeguet.png' },
-  { num: 19, name: 'Mostafa Mohamed', pos: 'Forward', img: '/src/assets/players/mostafa.png' }
+  { num: 1, name: 'Mohamed El Shenawy', pos: 'Goalkeeper', img: '/src/assets/players/mohamed el shenawy.png', age: 35, club: 'Al Ahly' },
+  { num: 3, name: 'Mohamed Hany', pos: 'Defender', img: '/src/assets/players/mohamed_hany-removebg-preview.png', age: 28, club: 'Al Ahly' },
+  { num: 6, name: 'Ahmed Hegazi', pos: 'Defender', img: '/src/assets/players/ahmed_hegazy-removebg-preview (1).png', age: 33, club: 'Neom SC' },
+  { num: 2, name: 'Mohamed Abdelmonem', pos: 'Defender', img: '/src/assets/players/mohamed abdelmonem.png', age: 25, club: 'Nice' },
+  { num: 13, name: 'Ahmed Fotouh', pos: 'Defender', img: '/src/assets/players/Ahmed_fotouh-removebg-preview.png', age: 26, club: 'Zamalek' },
+  { num: 17, name: 'Mohamed Elneny', pos: 'Midfielder', img: '/src/assets/players/mohamed el neny.png', age: 31, club: 'Al Jazira' },
+  { num: 8, name: 'Emam Ashour', pos: 'Midfielder', img: '/src/assets/players/emam_ashour-removebg-preview.png', age: 26, club: 'Al Ahly' },
+  { num: 5, name: 'Hamdi Fathi', pos: 'Midfielder', img: '/src/assets/players/hamdi fathy.png', age: 29, club: 'Al-Wakrah' },
+  { num: 10, name: 'Mohamed Salah (C)', pos: 'Forward', img: '/src/assets/players/mohamed_salah-removebg-preview.png', age: 31, club: 'Liverpool' },
+  { num: 7, name: 'Trezeguet', pos: 'Forward', img: '/src/assets/players/Trezeguet.png', age: 29, club: 'Trabzonspor' },
+  { num: 19, name: 'Mostafa Mohamed', pos: 'Forward', img: '/src/assets/players/mostafa mohamed.png', age: 26, club: 'Nantes' }
 ];
 
 const BELGIUM_ROSTER = [
-  { num: 1, name: 'Thibaut Courtois', pos: 'Goalkeeper', img: '/src/assets/players/courtois.png' },
-  { num: 21, name: 'Timothy Castagne', pos: 'Defender', img: '/src/assets/players/castagne_transparent.png' },
-  { num: 5, name: 'Jan Vertonghen', pos: 'Defender', img: '/src/assets/players/jan.png' },
-  { num: 4, name: 'Wout Faes', pos: 'Defender', img: '/src/assets/players/wout_faes.png', imgStyle: 'transform: scale(2.0); transform-origin: bottom center;' },
-  { num: 3, name: 'Arthur Theate', pos: 'Defender', img: '/src/assets/players/arthur.png?v=2' },
-  { num: 8, name: 'Youri Tielemans', pos: 'Midfielder', img: '/src/assets/players/tielemans.png' },
-  { num: 24, name: 'Amadou Onana', pos: 'Midfielder', img: '/src/assets/players/onana.png' },
-  { num: 7, name: 'Kevin De Bruyne (C)', pos: 'Midfielder', img: '/src/assets/players/debruyne.png?v=2' },
-  { num: 11, name: 'Yannick Carrasco', pos: 'Forward', img: '/src/assets/players/carrasco.png' },
-  { num: 10, name: 'Romelu Lukaku', pos: 'Forward', img: '/src/assets/players/lukaku.png?v=2' },
-  { num: 22, name: 'Jérémy Doku', pos: 'Forward', img: '/src/assets/players/doku.png' }
+  { num: 1, name: 'Thibaut Courtois', pos: 'Goalkeeper', img: '/src/assets/players/courtois.png', age: 31, club: 'Real Madrid' },
+  { num: 21, name: 'Timothy Castagne', pos: 'Defender', img: '/src/assets/players/castagne_transparent.png', age: 28, club: 'Fulham' },
+  { num: 5, name: 'Jan Vertonghen', pos: 'Defender', img: '/src/assets/players/jan.png', age: 37, club: 'Anderlecht' },
+  { num: 4, name: 'Wout Faes', pos: 'Defender', img: '/src/assets/players/wout_faes.png', imgStyle: 'transform: scale(2.0); transform-origin: bottom center;', age: 26, club: 'Leicester' },
+  { num: 3, name: 'Arthur Theate', pos: 'Defender', img: '/src/assets/players/arthur.png?v=2', age: 23, club: 'Eintracht' },
+  { num: 8, name: 'Youri Tielemans', pos: 'Midfielder', img: '/src/assets/players/tielemans.png', age: 27, club: 'Aston Villa' },
+  { num: 24, name: 'Amadou Onana', pos: 'Midfielder', img: '/src/assets/players/onana.png', age: 22, club: 'Aston Villa' },
+  { num: 7, name: 'Kevin De Bruyne (C)', pos: 'Midfielder', img: '/src/assets/players/debruyne.png?v=2', age: 32, club: 'Man City' },
+  { num: 11, name: 'Yannick Carrasco', pos: 'Forward', img: '/src/assets/players/carrasco.png', age: 30, club: 'Al Shabab' },
+  { num: 10, name: 'Romelu Lukaku', pos: 'Forward', img: '/src/assets/players/lukaku.png?v=2', age: 30, club: 'Roma' },
+  { num: 22, name: 'Jérémy Doku', pos: 'Forward', img: '/src/assets/players/doku.png', age: 21, club: 'Man City' }
 ];
 
 function readStoredUser() {
@@ -134,13 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="fut-card-top">
             <div class="fut-card-left-info">
               <div class="fut-card-pos">${shortPos}</div>
-              <div class="fut-card-rating">${rating}</div>
+              <div class="fut-card-rating" title="Player Number">${p.num}</div>
               <div class="fut-card-nation-box" style="background: ${flagGradient};"></div>
-              <div class="fut-card-club">
-                <svg viewBox="0 0 100 120" class="shield-icon">
-                  <path d="M50 120 L10 20 L10 0 L90 0 L90 20 Z" fill="rgba(255,255,255,0.8)"/>
-                  <text x="50" y="55" font-family="Arial" font-size="40" font-weight="bold" fill="#000" text-anchor="middle" dominant-baseline="middle">A</text>
-                </svg>
+              <div class="fut-card-age tooltip-container">
+                <span class="age-value">${p.age}</span>
+                <span class="tooltip-text">Player Age: ${p.age}</span>
               </div>
             </div>
             <div class="fut-card-player-img">
@@ -150,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="fut-card-bottom">
             <div class="fut-card-name">${p.name.toUpperCase()}</div>
             <div class="fut-card-stats-divider"></div>
+            <div class="fut-card-club-name">${(p.club || '').toUpperCase()}</div>
             <div class="fut-card-stats">
               <div class="fut-stat-labels">
                 <span>PAC</span><span>SHO</span><span>DRI</span><span>PAS</span><span>PHY</span><span>DEF</span>
@@ -168,4 +167,48 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGrid(egyptGrid, EGYPT_ROSTER, 'egypt');
   renderGrid(belgiumGrid, BELGIUM_ROSTER, 'belgium');
   initTeamsNavbar();
+
+  // Card Expansion Animation Logic
+  const createCardOverlay = () => {
+    let overlay = document.getElementById('card-expansion-overlay');
+    if (!overlay) {
+      document.body.insertAdjacentHTML('beforeend', `
+        <div id="card-expansion-overlay" class="card-overlay" aria-hidden="true">
+          <div class="card-overlay-close">&times;</div>
+          <div class="card-overlay-content" id="card-overlay-content"></div>
+        </div>
+      `);
+      overlay = document.getElementById('card-expansion-overlay');
+      
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay || e.target.classList.contains('card-overlay-close')) {
+          overlay.classList.remove('is-open');
+          setTimeout(() => {
+            document.getElementById('card-overlay-content').innerHTML = '';
+          }, 400); // Wait for CSS transition
+        }
+      });
+    }
+    return overlay;
+  };
+
+  createCardOverlay();
+
+  document.addEventListener('click', (e) => {
+    const card = e.target.closest('.fut-card-container');
+    // Only animate if it's not already the expanded one
+    if (card && !card.closest('.card-overlay-content')) {
+      const overlay = document.getElementById('card-expansion-overlay');
+      const content = document.getElementById('card-overlay-content');
+      
+      const cardClone = card.cloneNode(true);
+      
+      content.innerHTML = '';
+      content.appendChild(cardClone);
+      
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-open');
+      });
+    }
+  });
 });

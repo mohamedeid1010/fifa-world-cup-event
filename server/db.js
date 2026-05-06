@@ -32,12 +32,35 @@ let pool;
  */
 async function ensureSchema(pool) {
   const migrations = [
+    // Create missing Payment table for environments that were provisioned without it
+    `IF OBJECT_ID('Payment', 'U') IS NULL
+     BEGIN
+       CREATE TABLE Payment (
+         payment_id INT PRIMARY KEY,
+         amount DECIMAL(10,2) CHECK (amount > 0),
+         payment_date DATETIME DEFAULT GETDATE(),
+         payment_method VARCHAR(50),
+         status VARCHAR(20) DEFAULT 'Pending',
+         ticket_id INT,
+         FOREIGN KEY (ticket_id) REFERENCES Ticket(ticket_id)
+       )
+     END`,
     // EmergencyRequest missing columns
     `IF COL_LENGTH('EmergencyRequest','workflowStatus') IS NULL ALTER TABLE EmergencyRequest ADD workflowStatus VARCHAR(30) DEFAULT 'PENDING'`,
     `IF COL_LENGTH('EmergencyRequest','risk') IS NULL ALTER TABLE EmergencyRequest ADD risk VARCHAR(20) DEFAULT 'NORMAL'`,
     `IF COL_LENGTH('EmergencyRequest','details') IS NULL ALTER TABLE EmergencyRequest ADD details VARCHAR(MAX) DEFAULT ''`,
     `IF COL_LENGTH('EmergencyRequest','source') IS NULL ALTER TABLE EmergencyRequest ADD source VARCHAR(30) DEFAULT 'user-portal'`,
     `IF COL_LENGTH('EmergencyRequest','lastTouchedAt') IS NULL ALTER TABLE EmergencyRequest ADD lastTouchedAt DATETIME DEFAULT GETDATE()`,
+    `IF COL_LENGTH('EmergencyRequest','ticketRef') IS NULL ALTER TABLE EmergencyRequest ADD ticketRef VARCHAR(50) NULL`,
+    `IF COL_LENGTH('EmergencyRequest','sectionLabel') IS NULL ALTER TABLE EmergencyRequest ADD sectionLabel VARCHAR(50) NULL`,
+    `IF COL_LENGTH('EmergencyRequest','rowLabel') IS NULL ALTER TABLE EmergencyRequest ADD rowLabel VARCHAR(20) NULL`,
+    `IF COL_LENGTH('EmergencyRequest','seatLabel') IS NULL ALTER TABLE EmergencyRequest ADD seatLabel VARCHAR(20) NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveLatitude') IS NULL ALTER TABLE EmergencyRequest ADD liveLatitude FLOAT NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveLongitude') IS NULL ALTER TABLE EmergencyRequest ADD liveLongitude FLOAT NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveAccuracy') IS NULL ALTER TABLE EmergencyRequest ADD liveAccuracy FLOAT NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveCapturedAt') IS NULL ALTER TABLE EmergencyRequest ADD liveCapturedAt DATETIME NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveMapX') IS NULL ALTER TABLE EmergencyRequest ADD liveMapX FLOAT NULL`,
+    `IF COL_LENGTH('EmergencyRequest','liveMapY') IS NULL ALTER TABLE EmergencyRequest ADD liveMapY FLOAT NULL`,
     // Control board workflow columns
     `IF COL_LENGTH('EmergencyRequest','controlQueuedAt') IS NULL ALTER TABLE EmergencyRequest ADD controlQueuedAt DATETIME NULL`,
     `IF COL_LENGTH('EmergencyRequest','assignedUnit') IS NULL ALTER TABLE EmergencyRequest ADD assignedUnit VARCHAR(50) NULL`,

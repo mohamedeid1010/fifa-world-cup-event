@@ -1,10 +1,31 @@
 import express from 'express';
+import sql from 'mssql';
 import { getPool } from './db.js';
 import { sseHandler, broadcastEvent } from './sse.js';
 
 const router = express.Router();
 
 router.get('/stream', sseHandler);
+
+function parseUnifiedRequestId(requestId) {
+  const normalizedId = String(requestId || '').trim();
+
+  if (normalizedId.startsWith('assistance-')) {
+    return {
+      tableName: 'EmergencyRequest',
+      numericId: normalizedId.slice('assistance-'.length)
+    };
+  }
+
+  if (normalizedId.startsWith('food-')) {
+    return {
+      tableName: 'FoodOrder',
+      numericId: normalizedId.slice('food-'.length)
+    };
+  }
+
+  return null;
+}
 
 router.post('/auth/signup', async (req, res) => {
   try {
@@ -183,22 +204,28 @@ router.get('/tickets', async (req, res) => {
 });
 
 router.post('/tickets', async (req, res) => {
+  let transaction;
   try {
     const pool = await getPool();
+    transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    const tx = () => new sql.Request(transaction);
+
     const { ownerEmail, price, sectionShort, row, seatNumber } = req.body;
 
     // 1. Get user_id
-    const userResult = await pool.request()
+    const userResult = await tx()
       .input('email', ownerEmail)
       .query('SELECT user_id FROM Person WHERE email = @email');
       
     if (userResult.recordset.length === 0) {
+      await transaction.rollback();
       return res.status(404).json({ error: 'User not found. Please log in again.' });
     }
     const userId = userResult.recordset[0].user_id;
 
     // 2. Ensure Sector exists
-    const sectorResult = await pool.request()
+    const sectorResult = await tx()
       .input('name', sectionShort)
       .query('SELECT sector_id FROM Sector WHERE sector_name = @name');
       
@@ -206,9 +233,9 @@ router.post('/tickets', async (req, res) => {
     if (sectorResult.recordset.length > 0) {
       sectorId = sectorResult.recordset[0].sector_id;
     } else {
-      const sIdRes = await pool.request().query('SELECT ISNULL(MAX(sector_id), 0) + 1 as newId FROM Sector');
+      const sIdRes = await tx().query('SELECT ISNULL(MAX(sector_id), 0) + 1 as newId FROM Sector');
       sectorId = sIdRes.recordset[0].newId;
-      await pool.request()
+      await tx()
         .input('id', sectorId)
         .input('name', sectionShort)
         .input('type', 'Standard')
@@ -220,7 +247,7 @@ router.post('/tickets', async (req, res) => {
     // 3. Ensure Row exists. Frontend row is char 'A', 'B'. Convert to int using charCodeAt, or just use identity mapping.
     // DB requires row_num INT. 
     const rowNum = (typeof row === 'string') ? (row.charCodeAt(0) - 64) : parseInt(row);
-    const rowResult = await pool.request()
+    const rowResult = await tx()
       .input('sec', sectorId)
       .input('num', rowNum)
       .query('SELECT row_id FROM RowTable WHERE sector_id = @sec AND row_num = @num');
@@ -229,9 +256,9 @@ router.post('/tickets', async (req, res) => {
     if (rowResult.recordset.length > 0) {
       rowId = rowResult.recordset[0].row_id;
     } else {
-      const rIdRes = await pool.request().query('SELECT ISNULL(MAX(row_id), 0) + 1 as newId FROM RowTable');
+      const rIdRes = await tx().query('SELECT ISNULL(MAX(row_id), 0) + 1 as newId FROM RowTable');
       rowId = rIdRes.recordset[0].newId;
-      await pool.request()
+      await tx()
         .input('id', rowId)
         .input('num', rowNum)
         .input('sec', sectorId)
@@ -255,26 +282,26 @@ router.post('/tickets', async (req, res) => {
     const seatId = (sectorId * 10000) + (rowId * 100) + seatNum;
     
     // Check if it exists
-    const seatResult = await pool.request()
+    const seatResult = await tx()
       .input('id', seatId)
       .query('SELECT seat_id FROM Seat WHERE seat_id = @id');
       
     if (seatResult.recordset.length === 0) {
-      await pool.request()
+      await tx()
         .input('id', seatId)
         .input('rowId', rowId)
         .query("INSERT INTO Seat (seat_id, status, row_id) VALUES (@id, 'Booked', @rowId)");
     } else {
-      await pool.request()
+      await tx()
         .input('id', seatId)
         .query("UPDATE Seat SET status = 'Booked' WHERE seat_id = @id");
     }
 
     // 5. Insert Ticket
-    const tIdRes = await pool.request().query('SELECT ISNULL(MAX(ticket_id), 0) + 1 as newId FROM Ticket');
+    const tIdRes = await tx().query('SELECT ISNULL(MAX(ticket_id), 0) + 1 as newId FROM Ticket');
     const newTicketId = tIdRes.recordset[0].newId;
     
-    await pool.request()
+    await tx()
       .input('id', newTicketId)
       .input('price', price)
       .input('event', 1) // default event 1
@@ -283,17 +310,26 @@ router.post('/tickets', async (req, res) => {
       .query("INSERT INTO Ticket (ticket_id, price, status, event_id, seat_id, user_id) VALUES (@id, @price, 'Booked', @event, @seat, @user)");
 
     // 6. Insert Payment
-    const pIdRes = await pool.request().query('SELECT ISNULL(MAX(payment_id), 0) + 1 as newId FROM Payment');
+    const pIdRes = await tx().query('SELECT ISNULL(MAX(payment_id), 0) + 1 as newId FROM Payment');
     const newPaymentId = pIdRes.recordset[0].newId;
     
-    await pool.request()
+    await tx()
       .input('id', newPaymentId)
       .input('amount', price)
       .input('tid', newTicketId)
       .query("INSERT INTO Payment (payment_id, amount, payment_method, status, ticket_id) VALUES (@id, @amount, 'Card', 'Paid', @tid)");
 
+    await transaction.commit();
+
     res.status(201).json({ success: true, ticketId: newTicketId });
   } catch (err) {
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch {
+        // Ignore rollback errors when the transaction was never started or already completed.
+      }
+    }
     console.error('POST /tickets error:', err);
     res.status(500).json({ error: 'Failed to create ticket' });
   }
@@ -307,7 +343,7 @@ router.get('/requests', async (req, res) => {
     
     let query = `
       SELECT 
-        er.emergency_id as id,
+        CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id,
         'assistance' as kind,
         er.type as unitType,
         p.first_name + ' ' + p.last_name as ownerName,
@@ -324,10 +360,16 @@ router.get('/requests', async (req, res) => {
         er.handledAt,
         er.archivedAt,
         er.lastTouchedAt,
-        s.sector_name as section,
-        rt.row_num as row,
-        st.seat_id as seat,
-        t.ticket_id as ticketId
+        COALESCE(er.sectionLabel, s.sector_name) as section,
+        COALESCE(er.rowLabel, CAST(rt.row_num as VARCHAR(20))) as row,
+        COALESCE(er.seatLabel, CAST(st.seat_id as VARCHAR(20))) as seat,
+        COALESCE(er.ticketRef, CAST(t.ticket_id as VARCHAR(50))) as ticketId,
+        er.liveLatitude,
+        er.liveLongitude,
+        er.liveAccuracy,
+        er.liveCapturedAt,
+        er.liveMapX,
+        er.liveMapY
       FROM EmergencyRequest er
       JOIN Person p ON er.user_id = p.user_id
       LEFT JOIN Ticket t ON p.user_id = t.user_id
@@ -339,13 +381,18 @@ router.get('/requests', async (req, res) => {
       UNION ALL
 
       SELECT 
-        fo.order_id as id,
+        CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id,
         'food' as kind,
         'restaurant' as unitType,
         p.first_name + ' ' + p.last_name as ownerName,
         p.email as ownerEmail,
         fo.status,
-        'PENDING' as workflowStatus,
+        CASE
+          WHEN fo.archivedAt IS NOT NULL OR LOWER(COALESCE(fo.status, '')) LIKE '%collect%' THEN 'ARCHIVED'
+          WHEN fo.handledAt IS NOT NULL OR LOWER(COALESCE(fo.status, '')) LIKE '%ready%' THEN 'DONE'
+          WHEN LOWER(COALESCE(fo.status, '')) LIKE '%process%' THEN 'PROCESSING'
+          ELSE 'PENDING'
+        END as workflowStatus,
         'NORMAL' as risk,
         fi.name as details,
         fo.notes,
@@ -355,11 +402,17 @@ router.get('/requests', async (req, res) => {
         NULL as assignedUnit,
         fo.handledAt,
         fo.archivedAt,
-        GETDATE() as lastTouchedAt,
+        COALESCE(fo.archivedAt, fo.handledAt, fo.controlQueuedAt, fo.requested_at) as lastTouchedAt,
         s.sector_name as section,
-        rt.row_num as row,
-        st.seat_id as seat,
-        t.ticket_id as ticketId
+        CAST(rt.row_num as VARCHAR(20)) as row,
+        CAST(st.seat_id as VARCHAR(20)) as seat,
+        CAST(t.ticket_id as VARCHAR(50)) as ticketId,
+        CAST(NULL as FLOAT) as liveLatitude,
+        CAST(NULL as FLOAT) as liveLongitude,
+        CAST(NULL as FLOAT) as liveAccuracy,
+        CAST(NULL as DATETIME) as liveCapturedAt,
+        CAST(NULL as FLOAT) as liveMapX,
+        CAST(NULL as FLOAT) as liveMapY
       FROM FoodOrder fo
       JOIN Person p ON fo.user_id = p.user_id
       JOIN FoodItem fi ON fo.item_id = fi.item_id
@@ -422,10 +475,16 @@ router.post('/requests', async (req, res) => {
 
     const query = `
       INSERT INTO EmergencyRequest (
-        emergency_id, type, status, workflowStatus, risk, notes, details, source, user_id
+        emergency_id, type, status, workflowStatus, risk, notes, details, source,
+        ticketRef, sectionLabel, rowLabel, seatLabel,
+        liveLatitude, liveLongitude, liveAccuracy, liveCapturedAt, liveMapX, liveMapY,
+        user_id
       ) 
       VALUES (
-        @id, @type, @status, @workflowStatus, @risk, @notes, @details, @source, @userId
+        @id, @type, @status, @workflowStatus, @risk, @notes, @details, @source,
+        @ticketRef, @sectionLabel, @rowLabel, @seatLabel,
+        @liveLatitude, @liveLongitude, @liveAccuracy, @liveCapturedAt, @liveMapX, @liveMapY,
+        @userId
       )
     `;
     
@@ -438,13 +497,23 @@ router.post('/requests', async (req, res) => {
       .input('notes', data.notes || '')
       .input('details', data.details || '')
       .input('source', data.source || 'user-portal')
+      .input('ticketRef', data.ticketId ? String(data.ticketId) : null)
+      .input('sectionLabel', data.section ? String(data.section) : null)
+      .input('rowLabel', data.row ? String(data.row) : null)
+      .input('seatLabel', data.seat ? String(data.seat) : null)
+      .input('liveLatitude', data.liveLatitude ?? null)
+      .input('liveLongitude', data.liveLongitude ?? null)
+      .input('liveAccuracy', data.liveAccuracy ?? null)
+      .input('liveCapturedAt', data.liveCapturedAt || null)
+      .input('liveMapX', data.liveMapX ?? null)
+      .input('liveMapY', data.liveMapY ?? null)
       .input('userId', userId)
       .query(query);
     
     // Broadcast the new request (Fetch the full joined record)
     const broadcastQuery = `
       SELECT 
-        er.emergency_id as id,
+        CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id,
         'assistance' as kind,
         er.type as unitType,
         p.first_name + ' ' + p.last_name as ownerName,
@@ -461,9 +530,16 @@ router.post('/requests', async (req, res) => {
         er.handledAt,
         er.archivedAt,
         er.lastTouchedAt,
-        s.sector_name as section,
-        rt.row_num as row,
-        st.seat_id as seat
+        COALESCE(er.sectionLabel, s.sector_name) as section,
+        COALESCE(er.rowLabel, CAST(rt.row_num as VARCHAR(20))) as row,
+        COALESCE(er.seatLabel, CAST(st.seat_id as VARCHAR(20))) as seat,
+        COALESCE(er.ticketRef, CAST(t.ticket_id as VARCHAR(50))) as ticketId,
+        er.liveLatitude,
+        er.liveLongitude,
+        er.liveAccuracy,
+        er.liveCapturedAt,
+        er.liveMapX,
+        er.liveMapY
       FROM EmergencyRequest er
       JOIN Person p ON er.user_id = p.user_id
       LEFT JOIN Ticket t ON p.user_id = t.user_id
@@ -496,23 +572,36 @@ router.put('/requests/:id', async (req, res) => {
     const { id } = req.params;
     const pool = await getPool();
     const updates = req.body;
+    const parsedRequestId = parseUnifiedRequestId(id);
+    const numericId = Number.parseInt(parsedRequestId?.numericId ?? String(id), 10);
+
+    if (!Number.isFinite(numericId)) {
+      return res.status(400).json({ error: 'Invalid request id' });
+    }
+
+    const request = pool.request().input('id', numericId);
     
     // Determine which table to update
-    const typeCheck = await pool.request().input('id', id).query(`
-      SELECT 'EmergencyRequest' as tbl FROM EmergencyRequest WHERE emergency_id = @id
-      UNION
-      SELECT 'FoodOrder' as tbl FROM FoodOrder WHERE order_id = @id
-    `);
-    
-    if (typeCheck.recordset.length === 0) {
-      return res.status(404).json({ error: 'Request not found' });
+    let tableName = parsedRequestId?.tableName;
+
+    if (!tableName) {
+      const typeCheck = await pool.request().input('id', numericId).query(`
+        SELECT 'EmergencyRequest' as tbl FROM EmergencyRequest WHERE emergency_id = @id
+        UNION
+        SELECT 'FoodOrder' as tbl FROM FoodOrder WHERE order_id = @id
+      `);
+
+      if (typeCheck.recordset.length === 0) {
+        return res.status(404).json({ error: 'Request not found' });
+      }
+
+      tableName = typeCheck.recordset[0].tbl;
     }
-    
-    const tableName = typeCheck.recordset[0].tbl;
+
     const idColumn = tableName === 'EmergencyRequest' ? 'emergency_id' : 'order_id';
 
     // Whitelist of columns that can be updated dynamically
-    const allowedColumns = new Set(['status', 'workflowStatus', 'risk', 'notes', 'details', 'source', 'type', 'controlQueuedAt', 'assignedUnit', 'handledAt', 'archivedAt']);
+    const allowedColumns = new Set(['status', 'workflowStatus', 'risk', 'notes', 'details', 'source', 'type', 'controlQueuedAt', 'assignedUnit', 'handledAt', 'archivedAt', 'ticketRef', 'sectionLabel', 'rowLabel', 'seatLabel', 'liveLatitude', 'liveLongitude', 'liveAccuracy', 'liveCapturedAt', 'liveMapX', 'liveMapY']);
     const skipKeys = new Set(['id', 'createdAt', 'lastTouchedAt', 'ownerEmail', 'ownerName', 'section', 'row', 'seat', 'ticketId', 'kind', 'unitType', 'title', 'subtitle']);
     
     let setClauses = [];
@@ -530,45 +619,71 @@ router.put('/requests/:id', async (req, res) => {
     const query = `UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE ${idColumn} = @id`;
     await request.query(query);
 
-    // Fetch full joined record for broadcast
-    const broadcastQuery = `
-      SELECT 
-        er.emergency_id as id, 'assistance' as kind, er.type as unitType,
-        p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
-        er.status, er.workflowStatus, er.risk, er.details, er.notes, er.source,
-        er.requested_at as createdAt, er.controlQueuedAt, er.assignedUnit,
-        er.handledAt, er.archivedAt, er.lastTouchedAt,
-        s.sector_name as section, rt.row_num as row, st.seat_id as seat
-      FROM EmergencyRequest er
-      JOIN Person p ON er.user_id = p.user_id
-      LEFT JOIN Ticket t ON p.user_id = t.user_id
-      LEFT JOIN Seat st ON t.seat_id = st.seat_id
-      LEFT JOIN RowTable rt ON st.row_id = rt.row_id
-      LEFT JOIN Sector s ON rt.sector_id = s.sector_id
-      WHERE er.emergency_id = @id
-      
-      UNION ALL
-      
-      SELECT 
-        fo.order_id as id, 'food' as kind, 'restaurant' as unitType,
-        p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
-        fo.status, 'PENDING' as workflowStatus, 'NORMAL' as risk,
-        fi.name as details, fo.notes, 'user-portal' as source,
-        fo.requested_at as createdAt, fo.controlQueuedAt, NULL as assignedUnit,
-        fo.handledAt, fo.archivedAt, GETDATE() as lastTouchedAt,
-        s.sector_name as section, rt.row_num as row, st.seat_id as seat
-      FROM FoodOrder fo
-      JOIN Person p ON fo.user_id = p.user_id
-      JOIN FoodItem fi ON fo.item_id = fi.item_id
-      LEFT JOIN Ticket t ON p.user_id = t.user_id
-      LEFT JOIN Seat st ON t.seat_id = st.seat_id
-      LEFT JOIN RowTable rt ON st.row_id = rt.row_id
-      LEFT JOIN Sector s ON rt.sector_id = s.sector_id
-      WHERE fo.order_id = @id
-    `;
+    // Fetch the updated record from the table that was actually modified.
+    const broadcastQuery = tableName === 'EmergencyRequest'
+      ? `
+          SELECT 
+            CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id, 'assistance' as kind, er.type as unitType,
+            p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
+            er.status, er.workflowStatus, er.risk, er.details, er.notes, er.source,
+            er.requested_at as createdAt, er.controlQueuedAt, er.assignedUnit,
+            er.handledAt, er.archivedAt, er.lastTouchedAt,
+            COALESCE(er.sectionLabel, s.sector_name) as section,
+            COALESCE(er.rowLabel, CAST(rt.row_num as VARCHAR(20))) as row,
+            COALESCE(er.seatLabel, CAST(st.seat_id as VARCHAR(20))) as seat,
+            COALESCE(er.ticketRef, CAST(t.ticket_id as VARCHAR(50))) as ticketId,
+            er.liveLatitude,
+            er.liveLongitude,
+            er.liveAccuracy,
+            er.liveCapturedAt,
+            er.liveMapX,
+            er.liveMapY
+          FROM EmergencyRequest er
+          JOIN Person p ON er.user_id = p.user_id
+          LEFT JOIN Ticket t ON p.user_id = t.user_id
+          LEFT JOIN Seat st ON t.seat_id = st.seat_id
+          LEFT JOIN RowTable rt ON st.row_id = rt.row_id
+          LEFT JOIN Sector s ON rt.sector_id = s.sector_id
+          WHERE er.emergency_id = @id
+        `
+      : `
+          SELECT 
+            CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id, 'food' as kind, 'restaurant' as unitType,
+            p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
+            fo.status,
+            CASE
+              WHEN fo.archivedAt IS NOT NULL OR LOWER(COALESCE(fo.status, '')) LIKE '%collect%' THEN 'ARCHIVED'
+              WHEN fo.handledAt IS NOT NULL OR LOWER(COALESCE(fo.status, '')) LIKE '%ready%' THEN 'DONE'
+              WHEN LOWER(COALESCE(fo.status, '')) LIKE '%process%' THEN 'PROCESSING'
+              ELSE 'PENDING'
+            END as workflowStatus,
+            'NORMAL' as risk,
+            fi.name as details, fo.notes, 'user-portal' as source,
+            fo.requested_at as createdAt, fo.controlQueuedAt, NULL as assignedUnit,
+            fo.handledAt, fo.archivedAt,
+            COALESCE(fo.archivedAt, fo.handledAt, fo.controlQueuedAt, fo.requested_at) as lastTouchedAt,
+            s.sector_name as section,
+            CAST(rt.row_num as VARCHAR(20)) as row,
+            CAST(st.seat_id as VARCHAR(20)) as seat,
+            CAST(t.ticket_id as VARCHAR(50)) as ticketId,
+            CAST(NULL as FLOAT) as liveLatitude,
+            CAST(NULL as FLOAT) as liveLongitude,
+            CAST(NULL as FLOAT) as liveAccuracy,
+            CAST(NULL as DATETIME) as liveCapturedAt,
+            CAST(NULL as FLOAT) as liveMapX,
+            CAST(NULL as FLOAT) as liveMapY
+          FROM FoodOrder fo
+          JOIN Person p ON fo.user_id = p.user_id
+          JOIN FoodItem fi ON fo.item_id = fi.item_id
+          LEFT JOIN Ticket t ON p.user_id = t.user_id
+          LEFT JOIN Seat st ON t.seat_id = st.seat_id
+          LEFT JOIN RowTable rt ON st.row_id = rt.row_id
+          LEFT JOIN Sector s ON rt.sector_id = s.sector_id
+          WHERE fo.order_id = @id
+        `;
 
     const broadcastResult = await pool.request()
-      .input('id', id)
+      .input('id', numericId)
       .query(broadcastQuery);
       
     if (broadcastResult.recordset.length > 0) {
@@ -622,7 +737,7 @@ router.post('/food-orders', async (req, res) => {
         .input('id', newOrderId)
         .query(`
           SELECT 
-            fo.order_id as id, 'food' as kind, 'restaurant' as unitType,
+            CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id, 'food' as kind, 'restaurant' as unitType,
             p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
             fo.status, 'PENDING' as workflowStatus, 'NORMAL' as risk,
             fi.name as details, fo.notes, 'user-portal' as source,

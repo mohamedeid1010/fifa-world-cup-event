@@ -1,13 +1,45 @@
 const API_BASE = '/api';
+const GET_RETRY_DELAYS_MS = [250, 800, 1600];
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 export const api = {
   async get(endpoint) {
-    const res = await fetch(`${API_BASE}${endpoint}`);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `GET ${endpoint} failed`);
+    let lastError;
+
+    for (let attempt = 0; attempt <= GET_RETRY_DELAYS_MS.length; attempt += 1) {
+      try {
+        const res = await fetch(`${API_BASE}${endpoint}`);
+
+        if (res.ok) {
+          return res.json();
+        }
+
+        const body = await res.json().catch(() => ({}));
+        const error = new Error(body.error || `GET ${endpoint} failed`);
+
+        if (res.status >= 500 && attempt < GET_RETRY_DELAYS_MS.length) {
+          lastError = error;
+          await wait(GET_RETRY_DELAYS_MS[attempt]);
+          continue;
+        }
+
+        throw error;
+      } catch (error) {
+        if (attempt >= GET_RETRY_DELAYS_MS.length) {
+          throw error;
+        }
+
+        lastError = error;
+        await wait(GET_RETRY_DELAYS_MS[attempt]);
+      }
     }
-    return res.json();
+
+    throw lastError || new Error(`GET ${endpoint} failed`);
   },
 
   async post(endpoint, data) {

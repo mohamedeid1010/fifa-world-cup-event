@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEYS = {
     user: 'fifa-matchday-user',
     tickets: 'fifa-matchday-tickets',
-    services: 'fifa-matchday-services'
+    services: 'fifa-matchday-services',
+    liveLocation: 'fifa-matchday-live-location-cache'
   };
 
   const DB_VERSION = 'v4_clear_data_strict_1_ticket';
@@ -34,6 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const targetDate = new Date('June 15, 2026 18:00:00').getTime();
+  const LIVE_LOCATION_GEOFENCE = {
+    minLat: 30.0670,
+    maxLat: 30.0738,
+    minLng: 31.3096,
+    maxLng: 31.3188
+  };
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
 
   const elements = {
     appContainer: document.getElementById('app'),
@@ -117,6 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
     emergencyHeader: document.getElementById('emergency-header'),
     emergencyContent: document.getElementById('emergency-content'),
     emergencySuccess: document.getElementById('emergency-success'),
+    locationSharingBox: document.getElementById('location-sharing-box'),
+    locationStatusLabel: document.getElementById('location-status-label'),
+    locationStatusMeta: document.getElementById('location-status-meta'),
+    locationStatusPill: document.getElementById('location-status-pill'),
+    shareLiveLocationBtn: document.getElementById('share-live-location-btn'),
     emergencySeatDisplay: document.getElementById('emergency-seat-display'),
     emergencyBtns: document.querySelectorAll('.emergency-btn'),
     portalTransition: document.getElementById('portal-transition'),
@@ -142,7 +158,10 @@ document.addEventListener('DOMContentLoaded', () => {
     dashboardRequested: null,
     dashboardRoute: 'tickets',
     authMode: 'signup', // 'signup' or 'signin'
-    allBookedSeats: []
+    allBookedSeats: [],
+    emergencyLocationShared: false,
+    emergencyLocationBusy: false,
+    emergencyLocationPayload: null
   };
 
   let pendingAction = null;
@@ -152,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const INTRO_END_DELAY = 220;
   const INTRO_HIDE_DELAY = 1100;
   const INTRO_FALLBACK_DURATION = 15000;
+  let emergencyLocationTimer = 0;
   let introCompleted = false;
   let introFallbackTimer = 0;
   let introHideTimer = 0;
@@ -220,6 +240,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveServiceRequests() {
     // Deprecated: API used instead
+  }
+
+  function readEmergencyLocationCache() {
+    return readStorage(STORAGE_KEYS.liveLocation, {});
+  }
+
+  function getStoredEmergencyLocation(email = getCurrentUserEmail()) {
+    if (!email) {
+      return null;
+    }
+
+    const cache = readEmergencyLocationCache();
+    const cachedEntry = cache[email];
+
+    if (!cachedEntry) {
+      return null;
+    }
+
+    if (cachedEntry.payload) {
+      return cachedEntry;
+    }
+
+    return {
+      sharedAt: null,
+      payload: cachedEntry
+    };
+  }
+
+  function storeEmergencyLocationForAccount(payload, email = getCurrentUserEmail()) {
+    if (!email) {
+      return;
+    }
+
+    const cache = readEmergencyLocationCache();
+    cache[email] = {
+      sharedAt: new Date().toISOString(),
+      payload
+    };
+    writeStorage(STORAGE_KEYS.liveLocation, cache);
   }
 
   function escapeHtml(value) {
@@ -323,6 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (route === 'services') {
+      if (state.serviceRequests.length > 0) {
+        return document.querySelector('.service-log-section') || document.querySelector('.dash-services-grid') || elements.dashboardPage;
+      }
+
       return document.querySelector('.dash-services-grid') || elements.dashboardPage;
     }
 
@@ -615,6 +678,73 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
+  function getServiceRequestDisplayStatus(request) {
+    const rawStatus = String(request.status || '').toLowerCase();
+    const workflowStatus = String(request.workflowStatus || '').toUpperCase();
+
+    if (request.kind === 'food') {
+      if (rawStatus.includes('collect') || workflowStatus === 'ARCHIVED') {
+        return { label: 'COLLECTED', className: 'archived' };
+      }
+
+      if (rawStatus.includes('ready') || workflowStatus === 'DONE') {
+        return { label: 'READY', className: 'done' };
+      }
+    }
+
+    if (workflowStatus === 'ARCHIVED') {
+      return { label: 'ARCHIVED', className: 'archived' };
+    }
+
+    if (workflowStatus === 'DONE') {
+      return { label: 'DONE', className: 'done' };
+    }
+
+    if (workflowStatus === 'PROCESSING') {
+      return { label: 'PROCESSING', className: 'processing' };
+    }
+
+    return { label: 'PENDING', className: 'pending' };
+  }
+
+  function getServiceRequestTitle(request) {
+    if (request.kind === 'food') {
+      return request.details ? `Restaurant Order - ${request.details}` : 'Restaurant Order';
+    }
+
+    const unitType = String(request.unitType || '').toLowerCase();
+
+    if (unitType === 'ambulance') {
+      return 'Ambulance Assistance';
+    }
+
+    if (unitType === 'police') {
+      return 'Police Assistance';
+    }
+
+    if (unitType === 'restaurant') {
+      return 'Restaurant Order';
+    }
+
+    return 'Service Request';
+  }
+
+  function getServiceRequestSubtitle(request) {
+    if (request.section && request.row && request.seat) {
+      return `Section ${request.section} | Row ${request.row} Seat ${request.seat}`;
+    }
+
+    if (request.ticketId) {
+      return `Ticket ${request.ticketId}`;
+    }
+
+    return 'Linked to your matchday account';
+  }
+
+  function getServiceRequestDisplayId(request) {
+    return String(request.id || '').replace(/^[^-]+-/, '') || '--';
+  }
+
   async function renderTickets() {
     if (!state.user?.email) return;
     
@@ -642,13 +772,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function buildServiceRequestMarkup(request) {
-    const notes = escapeHtml(request.notes || 'No extra details added.').replace(/\n/g, '<br>');
-    const title = request.title || `${request.unitType?.toUpperCase()} Assistance`;
-    const subtitle = request.subtitle || `Section ${request.section} | Row ${request.row} Seat ${request.seat}`;
-    
-    // Status styling
-    const status = request.workflowStatus || 'PENDING';
-    const statusClass = status.toLowerCase();
+    const notes = escapeHtml(request.notes || request.details || 'No extra details added.').replace(/\n/g, '<br>');
+    const title = getServiceRequestTitle(request);
+    const subtitle = getServiceRequestSubtitle(request);
+    const status = getServiceRequestDisplayStatus(request);
     const unitText = request.assignedUnit ? `<span class="service-unit-tag">Unit: ${escapeHtml(request.assignedUnit)}</span>` : '';
 
     return `
@@ -658,10 +785,10 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="service-request-title">${escapeHtml(title)}</div>
             <div class="service-request-subtitle">${escapeHtml(subtitle)}</div>
           </div>
-          <div class="service-request-status-pill ${statusClass}">${escapeHtml(status)}</div>
+          <div class="service-request-status-pill ${status.className}">${escapeHtml(status.label)}</div>
         </div>
         <div class="service-request-meta">
-          <span>ID: ${escapeHtml(String(request.id))}</span>
+          <span>ID: ${escapeHtml(getServiceRequestDisplayId(request))}</span>
           ${unitText}
           <span class="service-priority-tag ${escapeHtml((request.risk || 'NORMAL').toLowerCase())}">${escapeHtml(request.risk || 'NORMAL')}</span>
         </div>
@@ -773,7 +900,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initIntro() {
-    if (!elements.introScreen || !elements.introVideo || currentUserHasTickets()) {
+    const skipIntroHashes = ['#services', '#portal', '#tickets'];
+    const shouldSkipByHash = skipIntroHashes.includes(window.location.hash);
+
+    if (!elements.introScreen || !elements.introVideo || currentUserHasTickets() || shouldSkipByHash) {
       if (elements.introScreen) elements.introScreen.style.display = 'none';
       if (elements.introVideo) elements.introVideo.pause();
       markAppReady();
@@ -799,9 +929,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // End intro when video finishes
     elements.introVideo.addEventListener('ended', finishIntro, { once: true });
-    
-    // Fallback if there's an error playing the video
     elements.introVideo.addEventListener('error', finishIntro, { once: true });
+
+    // Explicitly play the video since autoplay was removed from HTML
+    elements.introVideo.play().catch(err => {
+      console.warn('Video auto-play was prevented by the browser:', err);
+      // Fallback to close intro immediately if video cannot play
+      finishIntro();
+    });
+
   }
 
   function showDashboardNotice(message) {
@@ -899,11 +1035,18 @@ document.addEventListener('DOMContentLoaded', () => {
     replaceIndexHash(state.dashboardRoute);
     closeBookingFlow();
     closeServiceModal();
-    renderAllDynamicData();
+    const dataRender = Promise.resolve(renderAllDynamicData());
     updateAppView();
 
     const target = getDashboardTarget(state.dashboardRoute);
     target?.scrollIntoView({ behavior: scrollBehavior, block: 'start' });
+
+    dataRender.then(() => {
+      const refreshedTarget = getDashboardTarget(state.dashboardRoute);
+      if (refreshedTarget && refreshedTarget !== target) {
+        refreshedTarget.scrollIntoView({ behavior: scrollBehavior, block: 'start' });
+      }
+    });
   }
 
   function closeDashboard() {
@@ -927,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.restaurantTicketSelect.innerHTML = '';
     currentTickets.forEach((t) => {
       const option = document.createElement('option');
-      option.value = t.ticketId;
+      option.value = String(t.ticketId);
       option.textContent = `Ticket: ${t.ticketId} — ${getTicketSeatLabel(t)}`;
       elements.restaurantTicketSelect.appendChild(option);
     });
@@ -1044,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function placeRestaurantOrder() {
     const selectedTicketId = elements.restaurantTicketSelect.value;
-    const currentTicket = getCurrentUserTickets().find((ticket) => ticket.ticketId === selectedTicketId);
+    const currentTicket = getCurrentUserTickets().find((ticket) => String(ticket.ticketId) === String(selectedTicketId));
 
     if (!currentTicket) {
       closeRestaurantModal();
@@ -1078,12 +1221,129 @@ document.addEventListener('DOMContentLoaded', () => {
       
       closeRestaurantModal();
       await renderServiceRequests();
-      openDashboard();
+      openDashboard('services');
       showDashboardNotice('Order placed successfully! The restaurant is preparing your food.');
     } catch (err) {
       console.error(err);
       showDashboardNotice('Failed to place order.');
     }
+  }
+
+  function setEmergencyActionsEnabled(enabled) {
+    elements.emergencyBtns.forEach((button) => {
+      button.disabled = !enabled;
+      button.classList.toggle('is-disabled', !enabled);
+    });
+  }
+
+  function hasPreciseEmergencyLocation() {
+    return Number.isFinite(state.emergencyLocationPayload?.latitude)
+      && Number.isFinite(state.emergencyLocationPayload?.longitude);
+  }
+
+  function buildSeatFallbackLocationPayload() {
+    return {
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      capturedAt: new Date().toISOString(),
+      mapX: null,
+      mapY: null
+    };
+  }
+
+  function projectLiveLocationToMap(position) {
+    const latitude = Number(position?.coords?.latitude);
+    const longitude = Number(position?.coords?.longitude);
+    const accuracy = Number(position?.coords?.accuracy);
+    const latRatio = clamp(
+      (latitude - LIVE_LOCATION_GEOFENCE.minLat) / (LIVE_LOCATION_GEOFENCE.maxLat - LIVE_LOCATION_GEOFENCE.minLat),
+      0,
+      1
+    );
+    const lngRatio = clamp(
+      (longitude - LIVE_LOCATION_GEOFENCE.minLng) / (LIVE_LOCATION_GEOFENCE.maxLng - LIVE_LOCATION_GEOFENCE.minLng),
+      0,
+      1
+    );
+
+    return {
+      latitude,
+      longitude,
+      accuracy: Number.isFinite(accuracy) ? accuracy : null,
+      capturedAt: new Date(position?.timestamp || Date.now()).toISOString(),
+      mapX: clamp(14 + (lngRatio * 72), 14, 86),
+      mapY: clamp(14 + ((1 - latRatio) * 72), 14, 86)
+    };
+  }
+
+  function requestBrowserLiveLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported in this browser.'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    });
+  }
+
+  function updateEmergencyLocationUI(ticket) {
+    const locationStates = ['is-pending', 'is-locating', 'is-live'];
+    const pillStates = ['pending', 'locating', 'live'];
+    const hasPreciseLocation = hasPreciseEmergencyLocation();
+
+    elements.emergencySeatDisplay.textContent = ticket ? getTicketSeatLabel(ticket) : 'Seat --';
+    elements.locationSharingBox.classList.remove(...locationStates);
+    elements.locationStatusPill.classList.remove(...pillStates);
+
+    if (state.emergencyLocationBusy) {
+      elements.locationSharingBox.classList.add('is-locating');
+      elements.locationStatusLabel.textContent = 'Linking live location';
+      elements.locationStatusMeta.textContent = 'Requesting your current device location. Your seat data will stay attached to the request.';
+      elements.locationStatusPill.textContent = 'Locating';
+      elements.locationStatusPill.classList.add('locating');
+      elements.shareLiveLocationBtn.textContent = 'Sharing...';
+      elements.shareLiveLocationBtn.disabled = true;
+      setEmergencyActionsEnabled(false);
+      return;
+    }
+
+    if (state.emergencyLocationShared) {
+      elements.locationSharingBox.classList.add('is-live');
+      elements.locationStatusLabel.textContent = hasPreciseLocation ? 'User live location shared' : 'Seat fallback shared';
+      elements.locationStatusMeta.textContent = hasPreciseLocation
+        ? 'Saved for this account. Police and ambulance control will reuse your shared device location, and your seat data stays attached normally.'
+        : 'Saved for this account. GPS was unavailable, so requests will still be sent with your seat data.';
+      elements.locationStatusPill.textContent = hasPreciseLocation ? 'GPS Live' : 'Seat Fallback';
+      elements.locationStatusPill.classList.add('live');
+      elements.shareLiveLocationBtn.textContent = 'Location Shared';
+      elements.shareLiveLocationBtn.disabled = true;
+      setEmergencyActionsEnabled(true);
+      return;
+    }
+
+    elements.locationSharingBox.classList.add('is-pending');
+    elements.locationStatusLabel.textContent = 'Share your live location';
+    elements.locationStatusMeta.textContent = 'Link this request to your current match seat before choosing a unit.';
+    elements.locationStatusPill.textContent = 'Required';
+    elements.locationStatusPill.classList.add('pending');
+    elements.shareLiveLocationBtn.textContent = 'Share Live Location';
+    elements.shareLiveLocationBtn.disabled = false;
+    setEmergencyActionsEnabled(false);
+  }
+
+  function resetEmergencyLocationShare(ticket) {
+    window.clearTimeout(emergencyLocationTimer);
+    state.emergencyLocationBusy = false;
+    const cachedLocation = getStoredEmergencyLocation();
+    state.emergencyLocationShared = Boolean(cachedLocation);
+    state.emergencyLocationPayload = cachedLocation?.payload || null;
+    updateEmergencyLocationUI(ticket);
   }
 
   function openServiceModal() {
@@ -1094,7 +1354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    elements.emergencySeatDisplay.textContent = getTicketSeatLabel(currentTickets[0]);
+    resetEmergencyLocationShare(currentTickets[0]);
     elements.emergencyHeader.classList.remove('hidden');
     elements.emergencyContent.classList.remove('hidden');
     elements.emergencySuccess.classList.add('hidden');
@@ -1104,6 +1364,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function closeServiceModal() {
+    resetEmergencyLocationShare(getCurrentUserTickets()[0] || null);
     elements.serviceModal.classList.add('hidden');
   }
 
@@ -1639,13 +1900,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  elements.navTickets.addEventListener('click', (event) => {
-    event.preventDefault();
-    if (!ensureAuthenticated(() => routeToIndexSection('tickets'))) {
-      return;
-    }
-    routeToIndexSection('tickets');
-  });
+  if (elements.navTickets) {
+    elements.navTickets.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (!ensureAuthenticated(() => routeToIndexSection('tickets'))) {
+        return;
+      }
+      routeToIndexSection('tickets');
+    });
+  }
 
   if (elements.navServices) {
     elements.navServices.addEventListener('click', (event) => {
@@ -1672,6 +1935,35 @@ document.addEventListener('DOMContentLoaded', () => {
     openServiceModal();
   });
 
+  elements.shareLiveLocationBtn?.addEventListener('click', async () => {
+    const currentTicket = getCurrentUserTickets()[0];
+
+    if (!currentTicket || state.emergencyLocationBusy || state.emergencyLocationShared) {
+      return;
+    }
+
+    state.emergencyLocationBusy = true;
+    state.emergencyLocationPayload = null;
+    updateEmergencyLocationUI(currentTicket);
+
+    try {
+      const position = await requestBrowserLiveLocation();
+      state.emergencyLocationPayload = projectLiveLocationToMap(position);
+      state.emergencyLocationShared = true;
+      storeEmergencyLocationForAccount(state.emergencyLocationPayload);
+      showDashboardNotice('User live location captured. Control will receive it, and your seat data stays attached.');
+    } catch (error) {
+      console.warn('Could not capture browser live location', error);
+      state.emergencyLocationPayload = buildSeatFallbackLocationPayload();
+      state.emergencyLocationShared = true;
+      storeEmergencyLocationForAccount(state.emergencyLocationPayload);
+      showDashboardNotice('GPS permission was unavailable, so the request will be sent with your seat data only.');
+    } finally {
+      state.emergencyLocationBusy = false;
+      updateEmergencyLocationUI(currentTicket);
+    }
+  });
+
   elements.emergencyBtns.forEach((btn) => {
     btn.addEventListener('click', async (event) => {
       const type = event.currentTarget.getAttribute('data-type');
@@ -1679,6 +1971,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentTicket = currentTickets[0];
 
       if (!currentTicket) return;
+      if (!state.emergencyLocationShared) {
+        showDashboardNotice('Share live location first so control can find your seat quickly.');
+        return;
+      }
 
       // Prevent double click
       if (btn.classList.contains('is-sending')) return;
@@ -1704,14 +2000,22 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('is-sending');
       elements.emergencyCard.classList.add('sending');
 
+      const liveLocationPayload = state.emergencyLocationPayload || buildSeatFallbackLocationPayload();
+      const hasPreciseLocation = Number.isFinite(liveLocationPayload.latitude)
+        && Number.isFinite(liveLocationPayload.longitude);
+
       const newReq = {
         kind: 'assistance',
         title: `${type} Assistance`,
         subtitle: getTicketSeatLabel(currentTicket),
         status: 'Pending',
         workflowStatus: 'PENDING',
-        details: `Priority High`,
-        notes: 'Live location shared from the user portal.',
+        details: hasPreciseLocation
+          ? `Priority High • User live location • Accuracy ${Math.round(liveLocationPayload.accuracy || 0)}m`
+          : 'Priority High • Seat data fallback only',
+        notes: hasPreciseLocation
+          ? 'User live location shared from the device. Seat data stays attached in case the fan moved away from the assigned seat.'
+          : 'GPS unavailable. Seat data attached as the fallback location from the user portal.',
         ticketId: currentTicket.ticketId,
         ownerEmail: currentTicket.ownerEmail,
         ownerName: currentTicket.ownerName,
@@ -1720,6 +2024,12 @@ document.addEventListener('DOMContentLoaded', () => {
         section: currentTicket.sectionShort,
         row: currentTicket.row,
         seat: currentTicket.seatNumber,
+        liveLatitude: liveLocationPayload.latitude,
+        liveLongitude: liveLocationPayload.longitude,
+        liveAccuracy: liveLocationPayload.accuracy,
+        liveCapturedAt: liveLocationPayload.capturedAt,
+        liveMapX: liveLocationPayload.mapX,
+        liveMapY: liveLocationPayload.mapY,
         source: 'user-portal',
         risk: 'HIGH'
       };

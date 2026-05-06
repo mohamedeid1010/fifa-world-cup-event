@@ -7,7 +7,6 @@
     <meta name="description" content="FIFA World Cup 2026 - Book your tickets, order food, and access matchday services for Egypt vs Belgium." />
     <title>FIFA World Cup 2026 — Matchday Portal</title>
     <!-- Preload critical assets -->
-    <link rel="preload" href="/src/assets/image/background.jpg" as="image" />
     <link rel="preload" href="/src/style/style.css" as="style" />
     <link rel="preload" href="/src/style/ticket.css" as="style" />
     <!-- Fonts -->
@@ -18,8 +17,16 @@
     <link rel="stylesheet" href="/src/style/ticket.css" />
   </head>
   <body class="intro-active">
+    <script>
+      // Blocking script to prevent intro flash
+      const skipHashes = ['#services', '#portal', '#tickets'];
+      const shouldSkip = skipHashes.includes(window.location.hash) || localStorage.getItem('fifa-matchday-tickets');
+      if (shouldSkip) {
+        document.write('<style>.intro-screen { display: none !important; } html.app-ready .app-container { opacity: 1 !important; transform: none !important; filter: none !important; } .app-container { opacity: 0; transform: translateY(15px); filter: none !important; transition: none !important; animation: smoothEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } @keyframes smoothEntry { to { opacity: 1; transform: translateY(0); } }</style>');
+      }
+    </script>
     <div id="intro-screen" class="intro-screen">
-      <video id="intro-video" class="intro-video" autoplay muted playsinline preload="auto">
+      <video id="intro-video" class="intro-video" muted playsinline preload="auto">
         <source src="/src/assets/videos/intro.mp4" type="video/mp4">
       </video>
       <div class="intro-overlay-gradient"></div>
@@ -521,22 +528,26 @@
         
         <div id="emergency-content" class="emergency-content">
           <!-- Location box -->
-          <div class="location-sharing-box">
+          <div id="location-sharing-box" class="location-sharing-box is-pending">
             <div class="loc-icon">📍</div>
             <div class="loc-text">
-              <strong>Stadium Location Shared</strong>
+              <strong id="location-status-label">Share your live location</strong>
+              <span id="location-status-meta">Link this request to your current match seat before choosing a unit.</span>
               <span id="emergency-seat-display">Seat --</span>
             </div>
-            <div class="loc-status">Live</div>
+            <div class="location-sharing-actions">
+              <div id="location-status-pill" class="loc-status pending">Required</div>
+              <button id="share-live-location-btn" class="share-location-btn" type="button">Share Live Location</button>
+            </div>
           </div>
 
           <!-- Two buttons -->
           <div class="emergency-actions">
-            <button class="emergency-btn ambulance-btn" data-type="Ambulance">
+            <button class="emergency-btn ambulance-btn" data-type="Ambulance" disabled>
               <span class="em-icon">🚑</span>
               <span>Ambulance</span>
             </button>
-            <button class="emergency-btn police-btn" data-type="Police">
+            <button class="emergency-btn police-btn" data-type="Police" disabled>
               <span class="em-icon">🚓</span>
               <span>Police</span>
             </button>
@@ -613,6 +624,21 @@
       </div>
     </div>
 
+    <script>
+      // Instantly apply dashboard state to prevent flashing the ticket UI before main.js runs
+      if (shouldSkip) {
+        const mainContent = document.querySelector('.main-content');
+        const timerCard = document.querySelector('.timer-card');
+        const appContainer = document.getElementById('app');
+        if (mainContent) mainContent.classList.add('hidden');
+        if (timerCard) timerCard.classList.add('hidden');
+        document.body.classList.add('portal-mode');
+        if (appContainer) appContainer.classList.add('portal-mode');
+        // Also show the dashboard immediately
+        const dashboard = document.getElementById('matchday-dashboard');
+        if (dashboard) dashboard.classList.remove('hidden');
+      }
+    </script>
     <script type="module" src="/src/js/main.js"></script>
   </body>
 </html>
