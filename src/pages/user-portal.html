@@ -19,8 +19,9 @@
   <body class="intro-active">
     <script>
       // Blocking script to prevent intro flash
-      const skipHashes = ['#services', '#portal', '#tickets'];
-      const shouldSkip = skipHashes.includes(window.location.hash) || localStorage.getItem('fifa-matchday-tickets');
+      const INTRO_SEEN_KEY = 'fifa-matchday-intro-seen';
+      const shouldForceIntroOnRefresh = window.location.hash.toLowerCase() === '#tickets';
+      const shouldSkip = !shouldForceIntroOnRefresh && sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
       if (shouldSkip) {
         document.write('<style>.intro-screen { display: none !important; } html.app-ready .app-container { opacity: 1 !important; transform: none !important; filter: none !important; } .app-container { opacity: 0; transform: translateY(15px); filter: none !important; transition: none !important; animation: smoothEntry 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } @keyframes smoothEntry { to { opacity: 1; transform: translateY(0); } }</style>');
       }

@@ -1347,7 +1347,7 @@ export function initControlBoard(config) {
 
     if (badgeButton && badgeButton.closest('.incident-item')) {
       const card = badgeButton.closest('.incident-item');
-      const request = state.requestLookup.get(Number(card.dataset.requestId));
+      const request = state.requestLookup.get(String(card.dataset.requestId || ''));
 
       if (request) {
         openLocationModal(request);

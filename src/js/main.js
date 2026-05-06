@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pendingAction = null;
   let dashboardNoticeTimer = null;
   const INDEX_ROUTES = new Set(['matches', 'portal', 'tickets', 'services']);
+  const INTRO_SEEN_KEY = 'fifa-matchday-intro-seen';
   const occupiedSeatCache = new Map();
   const INTRO_END_DELAY = 220;
   const INTRO_HIDE_DELAY = 1100;
@@ -881,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     introCompleted = true;
+    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
     window.clearTimeout(introHideTimer);
     
     if (elements.introVideo) {
@@ -900,10 +902,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function initIntro() {
-    const skipIntroHashes = ['#services', '#portal', '#tickets'];
-    const shouldSkipByHash = skipIntroHashes.includes(window.location.hash);
+    const shouldForceIntroOnRefresh = window.location.hash.toLowerCase() === '#tickets';
+    const shouldSkipIntro = !shouldForceIntroOnRefresh && window.sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
 
-    if (!elements.introScreen || !elements.introVideo || currentUserHasTickets() || shouldSkipByHash) {
+    if (!elements.introScreen || !elements.introVideo || shouldSkipIntro) {
       if (elements.introScreen) elements.introScreen.style.display = 'none';
       if (elements.introVideo) elements.introVideo.pause();
       markAppReady();
