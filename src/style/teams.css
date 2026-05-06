@@ -101,35 +101,200 @@
   letter-spacing: 2px;
 }
 
-.roster-section { width: 100%; max-width: 500px; position: relative; z-index: 2;}
+.roster-section { width: 100%; max-width: 100%; position: relative; z-index: 2;}
 .roster-title {
   font-size: 20px; font-weight: 800; color: #fff;
   letter-spacing: 4px; margin-bottom: 24px; text-align: center;
   border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px;
 }
 .roster-grid {
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; 
+  flex-wrap: nowrap; 
+  gap: 20px; 
+  justify-content: flex-start;
+  overflow-x: auto;
+  padding-top: 20px; /* added so hover doesn't clip */
+  padding-bottom: 20px;
+  width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.3) rgba(0,0,0,0.2);
 }
-.player-card {
-  display: flex; align-items: center; gap: 20px;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 16px 24px; border-radius: 16px;
-  backdrop-filter: blur(10px);
-  transition: transform 0.3s, background 0.3s, border-color 0.3s;
+
+.roster-grid::-webkit-scrollbar { height: 8px; }
+.roster-grid::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+.roster-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+.roster-grid::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
+
+/* FUT Card Styles */
+.fut-card-container {
+  width: 200px;
+  height: 280px;
+  position: relative;
+  border-radius: 12px;
+  border-bottom-left-radius: 100px 30px;
+  border-bottom-right-radius: 100px 30px;
+  padding: 3px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  transition: transform 0.3s, filter 0.3s;
+  cursor: pointer;
+  flex-shrink: 0;
 }
-.player-card:hover {
-  transform: translateX(10px);
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.3);
+.fut-card-container:hover {
+  transform: translateY(-8px) scale(1.03);
+  filter: brightness(1.1);
 }
-.player-number {
-  font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.4);
-  width: 50px; text-align: center;
+
+.gold-card {
+  background: linear-gradient(135deg, #FFD700 0%, #B8860B 40%, #FFF8DC 50%, #B8860B 60%, #FFD700 100%);
 }
-.player-info { display: flex; flex-direction: column; gap: 4px; }
-.player-name { font-size: 18px; font-weight: 800; color: #fff; }
-.player-pos { font-size: 13px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+.silver-card {
+  background: linear-gradient(135deg, #C0C0C0 0%, #808080 40%, #FFFFFF 50%, #808080 60%, #C0C0C0 100%);
+}
+
+.fut-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  border-bottom-left-radius: 97px 27px;
+  border-bottom-right-radius: 97px 27px;
+  background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.gold-card .fut-card {
+  background: linear-gradient(180deg, #2c2514 0%, #000 100%);
+}
+.silver-card .fut-card {
+  background: linear-gradient(180deg, #222 0%, #000 100%);
+}
+
+.fut-card-top {
+  display: flex;
+  height: 160px;
+  position: relative;
+  padding-top: 20px;
+  padding-left: 20px;
+}
+
+.fut-card-left-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.fut-card-pos {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.fut-card-rating {
+  font-size: 26px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.fut-card-nation-box {
+  width: 24px;
+  height: 16px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.fut-card-club {
+  width: 24px;
+  height: 28px;
+}
+.shield-icon {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+}
+
+.fut-card-player-img {
+  position: absolute;
+  bottom: 0;
+  right: 10px;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1;
+}
+.fut-card-player-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+}
+
+.fut-card-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+  flex-grow: 1;
+  z-index: 2;
+}
+
+.fut-card-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 4px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fut-card-stats-divider {
+  width: 80%;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  margin-bottom: 8px;
+}
+
+.fut-card-stats {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fut-stat-labels, .fut-stat-values {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.fut-stat-labels span {
+  font-size: 10px;
+  font-weight: 700;
+  color: #a0aebc;
+  width: 16%;
+  text-align: center;
+}
+.gold-card .fut-stat-labels span {
+  color: #d4af37;
+}
+
+.fut-stat-values span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+  width: 16%;
+  text-align: center;
+}
 
 /* Custom Scrollbars */
 .team-panel::-webkit-scrollbar { width: 8px; }

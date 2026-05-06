@@ -1,10 +1,8 @@
 import { initControlBoard } from './control-board.js';
 
 const medicalConfig = {
-  serviceType: 'Ambulance',
-  unitType: 'ambulance', // Critical for filtering database requests
-  roleName: 'MEDICAL RESPONSE',
-  emptySummaryTitle: 'MEDICAL OFFICER',
+  unitType: 'ambulance',
+  emptySummaryTitle: 'NO INCOMING MEDICAL ALERTS',
   defaultIncident: 'MEDICAL ASSISTANCE',
   defaultUnit: 'MED-UNIT 04',
   statusText: {
@@ -14,9 +12,9 @@ const medicalConfig = {
     archived: 'ARCHIVED'
   },
   riskLabels: {
-    'HIGH': 'High risk',
-    'RISK': 'High',
-    'NORMAL': 'Normal'
+    HIGH: 'High risk',
+    RISK: 'Risk',
+    NORMAL: 'Normal'
   }
 };
 

@@ -1,10 +1,8 @@
 import { initControlBoard } from './control-board.js';
 
 const policeConfig = {
-  serviceType: 'Police',
-  unitType: 'police', // Critical for filtering database requests
-  roleName: 'POLICE COMMAND',
-  emptySummaryTitle: 'POLICE COMMANDER',
+  unitType: 'police',
+  emptySummaryTitle: 'NO INCOMING POLICE ALERTS',
   defaultIncident: 'UNAUTHORIZED ACCESS',
   defaultUnit: 'UNIT 12A',
   statusText: {
