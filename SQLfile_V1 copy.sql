@@ -13,16 +13,20 @@ CREATE TABLE Person (
     user_id INT PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
-    phone VARCHAR(20) UNIQUE,
+    phone VARCHAR(20) NOT NULL DEFAULT '',
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL DEFAULT '123456'
 );
+
+CREATE UNIQUE INDEX UX_Person_phone_present
+ON Person(phone)
+WHERE phone <> '';
 
 -- Table: Attendee
 -- Represents users who attend events
 CREATE TABLE Attendee (
     user_id INT PRIMARY KEY,
-    emergency_contact VARCHAR(100),
+    emergency_contact VARCHAR(100) NOT NULL DEFAULT '',
     FOREIGN KEY (user_id) REFERENCES Person(user_id)
 );
 

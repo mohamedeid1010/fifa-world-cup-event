@@ -1,3 +1,5 @@
+import { pageUrls, userPortalUrl } from './routes.js';
+
 const STORAGE_KEYS = {
   user: 'fifa-matchday-user',
   tickets: 'fifa-matchday-tickets'
@@ -46,10 +48,10 @@ function getUserEntryPath() {
   const savedUser = getSavedUser();
 
   if (savedUser?.email) {
-    return '/src/pages/user-portal.html#portal';
+    return userPortalUrl('portal');
   }
 
-  return '/src/pages/user-portal.html#matches';
+  return userPortalUrl('matches');
 }
 
 function openInNewTab(path) {
@@ -69,6 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   elements.openControlDemoBtn?.addEventListener('click', () => {
     grantControlAccess();
-    openInNewTab('/src/pages/control-center.html');
+    openInNewTab(pageUrls.controlCenter);
   });
 });

@@ -1,4 +1,8 @@
 import { api } from './api.js';
+import { pageUrls, userPortalUrl } from './routes.js';
+
+const EGYPT_FLAG_ASSET = new URL('../assets/icon/flag.png', import.meta.url).href;
+const BELGIUM_FLAG_ASSET = new URL('../assets/icon/belgium (1).png', import.meta.url).href;
 
 document.addEventListener('DOMContentLoaded', () => {
   const USER_ACCESS_KEY = 'fifa-user-access';
@@ -15,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (!hasUserAccess) {
-    window.location.href = '/';
+    window.location.href = pageUrls.home;
     return;
   }
 
@@ -70,7 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
     authModalTitle: document.getElementById('auth-modal-title'),
     authModalDescription: document.getElementById('auth-modal-description'),
     authForm: document.getElementById('auth-form'),
-    authName: document.getElementById('auth-name'),
+    authFirstName: document.getElementById('auth-first-name'),
+    authLastName: document.getElementById('auth-last-name'),
     authEmail: document.getElementById('auth-email'),
     authPhone: document.getElementById('auth-phone'),
     authPassword: document.getElementById('auth-password'),
@@ -150,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const state = {
-    user: readStorage(STORAGE_KEYS.user, null),
+    user: normalizeUserData(readStorage(STORAGE_KEYS.user, null)),
     selectedSeats: [],
     currentSection: { name: '', price: 0 },
     tickets: readStorage(STORAGE_KEYS.tickets, []),
@@ -228,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveUser() {
     if (state.user) {
+      state.user = normalizeUserData(state.user);
       writeStorage(STORAGE_KEYS.user, state.user);
       return;
     }
@@ -503,8 +509,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function splitFullName(fullName = '') {
+    const parts = String(fullName).trim().split(/\s+/).filter(Boolean);
+    return {
+      firstName: parts[0] || '',
+      lastName: parts.slice(1).join(' ')
+    };
+  }
+
+  function normalizeUserData(user) {
+    if (!user) {
+      return null;
+    }
+
+    const derivedName = splitFullName(user.name || '');
+    const firstName = String(user.firstName || '').trim() || derivedName.firstName;
+    const lastName = String(user.lastName || '').trim() || derivedName.lastName;
+    const name = String(user.name || '').trim() || [firstName, lastName].filter(Boolean).join(' ');
+
+    return {
+      ...user,
+      firstName,
+      lastName,
+      name
+    };
+  }
+
   function updateAuthFormFromState() {
-    elements.authName.value = state.user?.name || '';
+    const { firstName, lastName } = normalizeUserData(state.user) || { firstName: '', lastName: '' };
+    elements.authFirstName.value = firstName;
+    elements.authLastName.value = lastName;
     elements.authEmail.value = state.user?.email || '';
     elements.authPhone.value = state.user?.phone || '';
   }
@@ -523,9 +557,12 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.authPassword.required = false;
       }
       
-      // Hide name/phone if already logged in (using stored values)
-      elements.authName.parentElement.style.display = '';
+      elements.authFirstName.parentElement.style.display = '';
+      elements.authLastName.parentElement.style.display = '';
       elements.authPhone.parentElement.style.display = '';
+      if (elements.authFirstName) elements.authFirstName.required = false;
+      if (elements.authLastName) elements.authLastName.required = false;
+      if (elements.authPhone) elements.authPhone.required = false;
       
       // Hide signup/signin toggle when logged in
       if (elements.authToggleContainer) elements.authToggleContainer.style.display = 'none';
@@ -545,7 +582,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Hide signup-only fields
       document.querySelectorAll('.signup-only').forEach(el => el.style.display = 'none');
-      if (elements.authName) elements.authName.required = false;
+      if (elements.authFirstName) elements.authFirstName.required = false;
+      if (elements.authLastName) elements.authLastName.required = false;
+      if (elements.authPhone) elements.authPhone.required = false;
     } else {
       elements.authModalTitle.textContent = 'Sign in before you buy your ticket';
       elements.authModalDescription.textContent = 'Save your booking in My Tickets and unlock food delivery plus police, ambulance, and stadium support requests on matchday.';
@@ -557,7 +596,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Show signup-only fields
       document.querySelectorAll('.signup-only').forEach(el => el.style.display = '');
-      if (elements.authName) elements.authName.required = true;
+      if (elements.authFirstName) elements.authFirstName.required = true;
+      if (elements.authLastName) elements.authLastName.required = true;
+      if (elements.authPhone) elements.authPhone.required = true;
     }
 
     elements.authLogoutBtn.hidden = true;
@@ -614,12 +655,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <div class="t-teams">
             <div class="t-team">
-              <img src="/src/assets/icon/flag.png" alt="EGY">
+              <img src="${EGYPT_FLAG_ASSET}" alt="EGY">
               <span>EGY</span>
             </div>
             <div class="t-vs">VS</div>
             <div class="t-team">
-              <img src="/src/assets/icon/belgium (1).png" alt="BEL">
+              <img src="${BELGIUM_FLAG_ASSET}" alt="BEL">
               <span>BEL</span>
             </div>
           </div>
@@ -848,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (elements.navPortal) {
       elements.navPortal.textContent = 'Matchday';
-      elements.navPortal.setAttribute('href', hasTickets ? '/src/pages/user-portal.html#portal' : '/src/pages/user-portal.html#matches');
+      elements.navPortal.setAttribute('href', hasTickets ? userPortalUrl('portal') : userPortalUrl('matches'));
     }
 
     // elements.navbar?.classList.toggle('pre-ticket-nav', !hasTickets); // Removed to keep navbar always visible
@@ -969,7 +1010,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Not logged in: show signup mode
       if (elements.authForm) {
         elements.authForm.dataset.mode = 'signup';
-        elements.authName.required = true;
+        elements.authFirstName.required = true;
+        elements.authLastName.required = true;
+        elements.authPhone.required = true;
       }
       if (elements.toggleSignupBtn) {
         elements.toggleSignupBtn.classList.add('active');
@@ -979,7 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     elements.authModal.classList.remove('hidden');
-    if (!state.user) elements.authName.focus();
+    if (!state.user) elements.authFirstName.focus();
   }
 
   function closeAuthModal(clearPendingAction = true) {
@@ -1702,10 +1745,28 @@ document.addEventListener('DOMContentLoaded', () => {
       mode = 'signin';
     }
 
-    const name = elements.authName?.value?.trim() || '';
+    const firstName = elements.authFirstName?.value?.trim() || '';
+    const lastName = elements.authLastName?.value?.trim() || '';
+    const name = [firstName, lastName].filter(Boolean).join(' ');
     const email = elements.authEmail?.value?.trim()?.toLowerCase() || '';
     const phone = elements.authPhone?.value?.trim() || '';
     const password = elements.authPassword?.value || '';
+
+    if (mode === 'signup' && (!firstName || !lastName || !phone || !email || !password)) {
+      if (elements.authErrorMsg) {
+        elements.authErrorMsg.textContent = 'All sign up fields are required.';
+        elements.authErrorMsg.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (mode === 'signin' && (!email || !password)) {
+      if (elements.authErrorMsg) {
+        elements.authErrorMsg.textContent = 'All sign in fields are required.';
+        elements.authErrorMsg.classList.remove('hidden');
+      }
+      return;
+    }
 
     if (!email || !password) {
       if (elements.authErrorMsg) {
@@ -1729,18 +1790,22 @@ document.addEventListener('DOMContentLoaded', () => {
           elements.authSuccessMsg.classList.remove('hidden');
         } else {
           // Just updating name/phone (not implemented on backend yet, but we'll save locally)
-          state.user.name = name;
-          state.user.phone = phone;
+          state.user = normalizeUserData({
+            ...state.user,
+            firstName,
+            lastName,
+            name,
+            phone
+          });
           elements.authSuccessMsg.textContent = 'Account details updated locally.';
           elements.authSuccessMsg.classList.remove('hidden');
         }
       } else if (mode === 'signup') {
-        if (!name) throw new Error('Full name is required for signup.');
-        const res = await api.post('/auth/signup', { name, email, phone, password });
-        state.user = res.user;
+        const res = await api.post('/auth/signup', { firstName, lastName, name, email, phone, password });
+        state.user = normalizeUserData(res.user);
       } else {
         const res = await api.post('/auth/login', { email, password });
-        state.user = res.user;
+        state.user = normalizeUserData(res.user);
       }
 
       saveUser();
@@ -2133,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    state.user = readStorage(STORAGE_KEYS.user, null);
+    state.user = normalizeUserData(readStorage(STORAGE_KEYS.user, null));
     state.tickets = readStorage(STORAGE_KEYS.tickets, []);
     renderAllDynamicData();
     updateAppView();

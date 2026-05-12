@@ -1,3 +1,5 @@
+import { pageUrls } from './routes.js';
+
 let selectedRole = null;
 const correctCodes = {
   police: '123456',
@@ -65,8 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // بما إن كل الصفحات بره في الـ Root، بنكتب اسم الملف مباشرة
       setTimeout(() => {
         window.location.href = selectedRole === 'police' 
-        ? '/src/pages/police.html' 
-        : '/src/pages/active-dispatches.html';
+        ? pageUrls.police 
+        : pageUrls.medical;
       }, 1000);
     } else {
       codeMessage.textContent = '✗ Invalid Code';

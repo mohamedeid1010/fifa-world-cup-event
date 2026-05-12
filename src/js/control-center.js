@@ -1,3 +1,5 @@
+import { pageUrls } from './routes.js';
+
 const STORAGE_KEYS = {
   user: 'fifa-matchday-user',
   tickets: 'fifa-matchday-tickets',
@@ -111,7 +113,7 @@ function grantControlAccess(role) {
 
 document.addEventListener('DOMContentLoaded', () => {
   if (!hasControlAccess()) {
-    window.location.href = '/';
+    window.location.href = pageUrls.home;
     return;
   }
 
@@ -164,10 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.setTimeout(() => {
       window.location.href = selectedRole === 'police'
-        ? '/src/pages/police.html'
+        ? pageUrls.police
         : selectedRole === 'medical'
-          ? '/src/pages/active-dispatches.html'
-          : '/src/pages/restaurant.html';
+          ? pageUrls.medical
+          : pageUrls.restaurant;
     }, 700);
   };
 

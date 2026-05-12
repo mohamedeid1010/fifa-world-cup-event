@@ -3,6 +3,74 @@
 
 ---
 
+## Railway Deployment
+
+This project is now set up to deploy to Railway as a single Node service:
+
+- `npm run build` builds the Vite frontend into `dist`
+- `npm start` runs the Express server and serves both the API and built frontend
+- `GET /health` returns a simple health-check response for hosting platforms
+
+## GitHub Pages Frontend Deployment
+
+The repository now supports deploying the Vite frontend to GitHub Pages.
+
+Important:
+
+- GitHub Pages only hosts the static frontend
+- The Express API and SQL Server connection must stay on Railway or another backend host
+- If you want a frontend-only demo with no backend at all, set the GitHub repository variable `VITE_STATIC_ONLY=true` and leave `VITE_API_BASE_URL` empty
+- Set the GitHub repository variable `VITE_API_BASE_URL` to your live backend API base, for example:
+
+```bash
+https://your-app.up.railway.app/api
+```
+
+### GitHub Setup Steps
+
+1. Push this repository to GitHub.
+2. In GitHub, open `Settings` → `Secrets and variables` → `Actions` → `Variables`.
+3. For the full app, create `VITE_API_BASE_URL` with your Railway or Azure API URL ending in `/api`.
+4. For frontend-only deployment, create `VITE_STATIC_ONLY=true` and do not set `VITE_API_BASE_URL`.
+5. In `Settings` → `Pages`, set `Source` to `GitHub Actions`.
+6. Push to `main` or run the `Deploy Frontend To GitHub Pages` workflow manually.
+
+The workflow builds `dist` with the correct repository base path, so multi-page routes like the portal, teams page, control center, and mini game work under `https://<user>.github.io/<repo>/`.
+
+### Required Railway Settings
+
+Use these commands in Railway if you want to set them explicitly:
+
+```bash
+Build command: npm run build
+Start command: npm start
+```
+
+### Required Environment Variables
+
+Copy the values from `.env.example` into Railway Variables and replace them with your real database settings:
+
+```bash
+PORT=3001
+DB_SERVER=your-sql-host
+DB_PORT=1433
+DB_NAME=your_database
+DB_USER=your_user
+DB_PASSWORD=your_password
+DB_ENCRYPT=true
+DB_TRUST_CERT=false
+DB_INSTANCE=
+```
+
+### Important Note About the Database
+
+The backend uses Microsoft SQL Server through `mssql`. Railway can run the application, but the app must connect to a SQL Server instance that Railway can reach.
+
+- Local values such as `localhost\\SQLEXPRESS` will not work on Railway
+- Use a hosted SQL Server endpoint, or containerize/migrate the database separately before expecting full production deployment
+- For Azure SQL, keep `DB_ENCRYPT=true` and `DB_TRUST_CERT=false`
+- Ensure the Azure SQL firewall allows incoming connections from Railway, otherwise the app will boot but database requests will fail
+
 ## 📋 About This Project
 
 This document is the complete collaboration and workflow reference for the FIFA World Cup Event project. It covers environment setup, Git branching strategy, daily development routine, and best practices every team member must follow.

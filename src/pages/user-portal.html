@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="FIFA World Cup 2026 - Book your tickets, order food, and access matchday services for Egypt vs Belgium." />
     <title>FIFA World Cup 2026 — Matchday Portal</title>
@@ -53,7 +53,7 @@
     <div id="app" class="app-container">
       <!-- Navbar -->
       <nav class="navbar" id="main-navbar">
-        <a class="nav-brand" href="/src/pages/user-portal.html#portal" aria-label="FIFA World Cup 2026 home">
+        <a class="nav-brand" href="%BASE_URL%src/pages/user-portal.html#portal" aria-label="FIFA World Cup 2026 home">
           <svg class="fifa-logo" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg">
             <text x="0" y="30" font-family="'Outfit', sans-serif" font-weight="800" font-size="28" fill="#1d2836">FIFA</text>
             <text x="60" y="20" font-family="'Outfit', sans-serif" font-weight="700" font-size="12" fill="#1d2836">WORLD CUP</text>
@@ -69,10 +69,10 @@
 
         <div class="nav-shell">
           <div id="site-nav-links" class="nav-links" data-nav-menu>
-            <a id="nav-portal" class="nav-link is-active" href="/src/pages/user-portal.html#portal">Matchday</a>
-            <a id="nav-services" class="nav-link" href="/src/pages/user-portal.html#services">Services</a>
-            <a id="nav-tickets" class="nav-link" href="/src/pages/user-portal.html#tickets">Tickets</a>
-            <a id="nav-teams" class="nav-link" href="/src/pages/teams.html">Teams</a>
+            <a id="nav-portal" class="nav-link is-active" href="%BASE_URL%src/pages/user-portal.html#portal">Matchday</a>
+            <a id="nav-services" class="nav-link" href="%BASE_URL%src/pages/user-portal.html#services">Services</a>
+            <a id="nav-tickets" class="nav-link" href="%BASE_URL%src/pages/user-portal.html#tickets">Tickets</a>
+            <a id="nav-teams" class="nav-link" href="%BASE_URL%src/pages/teams.html">Teams</a>
           </div>
 
           <button id="open-auth-btn" class="account-area nav-account" type="button">
@@ -197,7 +197,7 @@
               </div>
             </div>
             
-            <div class="dash-stat-card dash-stat-game" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); border: none; color: #1e293b; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(245, 158, 11, 0.3);" onclick="window.location.href='/src/pages/mini-game.html'">
+            <div class="dash-stat-card dash-stat-game" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); border: none; color: #1e293b; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(245, 158, 11, 0.3);" onclick="window.location.href='%BASE_URL%src/pages/mini-game.html'">
               <div style="position: absolute; top: -10px; right: -10px; width: 60px; height: 60px; background: #ef4444; color: #fff; display: flex; align-items: center; justify-content: center; transform: rotate(15deg); font-size: 10px; font-weight: 900; z-index: 5; box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);">NEW</div>
               <div style="position: absolute; bottom: -20px; left: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
               
@@ -290,8 +290,12 @@
 
         <form id="auth-form" class="auth-form" data-mode="signup">
           <div class="form-group signup-only">
-            <label for="auth-name">Full Name</label>
-            <input id="auth-name" name="name" type="text" placeholder="Amr Hassan">
+            <label for="auth-first-name">First Name</label>
+            <input id="auth-first-name" name="firstName" type="text" placeholder="Amr" required>
+          </div>
+          <div class="form-group signup-only">
+            <label for="auth-last-name">Last Name</label>
+            <input id="auth-last-name" name="lastName" type="text" placeholder="Hassan" required>
           </div>
           <div class="form-group">
             <label for="auth-email">Email</label>
@@ -299,7 +303,7 @@
           </div>
           <div class="form-group signup-only">
             <label for="auth-phone">Mobile Number</label>
-            <input id="auth-phone" name="phone" type="tel" placeholder="+20 100 000 0000">
+            <input id="auth-phone" name="phone" type="tel" placeholder="+20 100 000 0000" required>
           </div>
           <div class="form-group">
             <label for="auth-password">Password</label>

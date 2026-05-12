@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "concurrently \"vite\" \"node server/index.js\"",
     "build": "vite build",
+    "start": "node server/index.js",
     "preview": "vite preview",
     "fix:main": "node scripts/fix-main.cjs",
     "theme:portal": "node scripts/update-portal-theme.cjs",

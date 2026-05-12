@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { pageUrls } from './routes.js';
 
 const LIVE_LOCATION_MAP_ASSET = new URL('../assets/image/live-location-stadium.png', import.meta.url).href;
 
@@ -779,7 +780,7 @@ function createArchiveCard(request, config) {
 
 export function initControlBoard(config) {
   if (!hasControlAccess()) {
-    window.location.href = '/';
+    window.location.href = pageUrls.home;
     return;
   }
 

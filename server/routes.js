@@ -30,10 +30,15 @@ function parseUnifiedRequestId(requestId) {
 router.post('/auth/signup', async (req, res) => {
   try {
     const pool = await getPool();
-    const { name, email, phone, password } = req.body;
+    const { name, firstName: rawFirstName, lastName: rawLastName, email, phone, password } = req.body;
+    const normalizedPhone = String(phone || '').trim();
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
+    const nameParts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    const firstName = String(rawFirstName || '').trim() || nameParts[0] || '';
+    const lastName = String(rawLastName || '').trim() || nameParts.slice(1).join(' ');
+
+    if (!firstName || !lastName || !email || !normalizedPhone || !password) {
+      return res.status(400).json({ error: 'All sign up fields are required' });
     }
 
     // Check if email already exists
@@ -45,11 +50,6 @@ router.post('/auth/signup', async (req, res) => {
       return res.status(409).json({ error: 'Email already exists' });
     }
 
-    // Split name
-    const nameParts = (name || '').split(' ');
-    const firstName = nameParts[0] || 'User';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
     // Generate new ID
     const idResult = await pool.request().query('SELECT ISNULL(MAX(user_id), 0) + 1 as newId FROM Person');
     const newId = idResult.recordset[0].newId;
@@ -59,7 +59,7 @@ router.post('/auth/signup', async (req, res) => {
       .input('id', newId)
       .input('first', firstName)
       .input('last', lastName)
-      .input('phone', phone || '')
+      .input('phone', sql.VarChar(20), normalizedPhone)
       .input('email', email)
       .input('pass', password)
       .query('INSERT INTO Person (user_id, first_name, last_name, phone, email, password) VALUES (@id, @first, @last, @phone, @email, @pass)');
@@ -67,10 +67,24 @@ router.post('/auth/signup', async (req, res) => {
     // Insert Attendee
     await pool.request()
       .input('id', newId)
-      .query('INSERT INTO Attendee (user_id, emergency_contact) VALUES (@id, NULL)');
+      .input('emergencyContact', '')
+      .query('INSERT INTO Attendee (user_id, emergency_contact) VALUES (@id, @emergencyContact)');
 
-    res.status(201).json({ user: { id: newId, name: `${firstName} ${lastName}`.trim(), email, phone } });
+    res.status(201).json({
+      user: {
+        id: newId,
+        firstName,
+        lastName,
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        phone: normalizedPhone
+      }
+    });
   } catch (err) {
+    if (err?.number === 2627 || err?.number === 2601) {
+      return res.status(409).json({ error: 'Email or phone already exists' });
+    }
+
     console.error('POST /auth/signup error:', err);
     res.status(500).json({ error: 'Failed to sign up' });
   }
@@ -99,7 +113,16 @@ router.post('/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    res.json({ user: { id: user.user_id, name: `${user.first_name} ${user.last_name}`.trim(), email: user.email, phone: user.phone } });
+    res.json({
+      user: {
+        id: user.user_id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        name: `${user.first_name} ${user.last_name}`.trim(),
+        email: user.email,
+        phone: user.phone || ''
+      }
+    });
   } catch (err) {
     console.error('POST /auth/login error:', err);
     res.status(500).json({ error: 'Failed to log in' });
@@ -346,6 +369,7 @@ router.get('/requests', async (req, res) => {
         CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id,
         'assistance' as kind,
         er.type as unitType,
+        er.title,
         p.first_name + ' ' + p.last_name as ownerName,
         p.email as ownerEmail,
         er.status,
@@ -384,6 +408,7 @@ router.get('/requests', async (req, res) => {
         CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id,
         'food' as kind,
         'restaurant' as unitType,
+        fi.name as title,
         p.first_name + ' ' + p.last_name as ownerName,
         p.email as ownerEmail,
         fo.status,
@@ -462,9 +487,10 @@ router.post('/requests', async (req, res) => {
         .input('userId', newUserId)
         .input('first', guestName[0] || 'Guest')
         .input('last', guestName.slice(1).join(' ') || '')
+        .input('phone', '')
         .input('email', data.ownerEmail)
         .input('pass', '123456')
-        .query('INSERT INTO Person (user_id, first_name, last_name, email, password) VALUES (@userId, @first, @last, @email, @pass)');
+        .query('INSERT INTO Person (user_id, first_name, last_name, phone, email, password) VALUES (@userId, @first, @last, @phone, @email, @pass)');
       userId = newUserId;
     }
 
@@ -475,13 +501,13 @@ router.post('/requests', async (req, res) => {
 
     const query = `
       INSERT INTO EmergencyRequest (
-        emergency_id, type, status, workflowStatus, risk, notes, details, source,
+        emergency_id, type, title, status, workflowStatus, risk, notes, details, source,
         ticketRef, sectionLabel, rowLabel, seatLabel,
         liveLatitude, liveLongitude, liveAccuracy, liveCapturedAt, liveMapX, liveMapY,
         user_id
       ) 
       VALUES (
-        @id, @type, @status, @workflowStatus, @risk, @notes, @details, @source,
+        @id, @type, @title, @status, @workflowStatus, @risk, @notes, @details, @source,
         @ticketRef, @sectionLabel, @rowLabel, @seatLabel,
         @liveLatitude, @liveLongitude, @liveAccuracy, @liveCapturedAt, @liveMapX, @liveMapY,
         @userId
@@ -491,6 +517,7 @@ router.post('/requests', async (req, res) => {
     await pool.request()
       .input('id', newId)
       .input('type', data.unitType || data.type || '')
+      .input('title', data.title ? String(data.title) : null)
       .input('status', data.status || 'Pending')
       .input('workflowStatus', data.workflowStatus || 'PENDING')
       .input('risk', data.risk || 'NORMAL')
@@ -516,6 +543,7 @@ router.post('/requests', async (req, res) => {
         CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id,
         'assistance' as kind,
         er.type as unitType,
+        er.title,
         p.first_name + ' ' + p.last_name as ownerName,
         p.email as ownerEmail,
         er.status,
@@ -602,7 +630,10 @@ router.put('/requests/:id', async (req, res) => {
 
     // Whitelist of columns that can be updated dynamically
     const allowedColumns = new Set(['status', 'workflowStatus', 'risk', 'notes', 'details', 'source', 'type', 'controlQueuedAt', 'assignedUnit', 'handledAt', 'archivedAt', 'ticketRef', 'sectionLabel', 'rowLabel', 'seatLabel', 'liveLatitude', 'liveLongitude', 'liveAccuracy', 'liveCapturedAt', 'liveMapX', 'liveMapY']);
-    const skipKeys = new Set(['id', 'createdAt', 'lastTouchedAt', 'ownerEmail', 'ownerName', 'section', 'row', 'seat', 'ticketId', 'kind', 'unitType', 'title', 'subtitle']);
+    if (tableName === 'EmergencyRequest') {
+      allowedColumns.add('title');
+    }
+    const skipKeys = new Set(['id', 'createdAt', 'lastTouchedAt', 'ownerEmail', 'ownerName', 'section', 'row', 'seat', 'ticketId', 'kind', 'unitType', 'subtitle']);
     
     let setClauses = [];
     if (tableName === 'EmergencyRequest') {
@@ -623,7 +654,7 @@ router.put('/requests/:id', async (req, res) => {
     const broadcastQuery = tableName === 'EmergencyRequest'
       ? `
           SELECT 
-            CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id, 'assistance' as kind, er.type as unitType,
+            CONCAT('assistance-', CAST(er.emergency_id as VARCHAR(50))) as id, 'assistance' as kind, er.type as unitType, er.title,
             p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
             er.status, er.workflowStatus, er.risk, er.details, er.notes, er.source,
             er.requested_at as createdAt, er.controlQueuedAt, er.assignedUnit,
@@ -648,7 +679,7 @@ router.put('/requests/:id', async (req, res) => {
         `
       : `
           SELECT 
-            CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id, 'food' as kind, 'restaurant' as unitType,
+            CONCAT('food-', CAST(fo.order_id as VARCHAR(50))) as id, 'food' as kind, 'restaurant' as unitType, fi.name as title,
             p.first_name + ' ' + p.last_name as ownerName, p.email as ownerEmail,
             fo.status,
             CASE
