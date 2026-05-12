@@ -1,4 +1,5 @@
 import { pageUrls } from './routes.js';
+import { api, isLocalApiMode } from './api.js';
 
 const STORAGE_KEYS = {
   user: 'fifa-matchday-user',
@@ -83,8 +84,6 @@ function formatSyncTime(value) {
   }).format(new Date(value));
 }
 
-import { api } from './api.js';
-
 async function renderPortalSync() {
   const tickets = readStorage(STORAGE_KEYS.tickets, []);
   let serviceRequests = [];
@@ -112,7 +111,7 @@ function grantControlAccess(role) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!hasControlAccess()) {
+  if (!hasControlAccess() && !isLocalApiMode) {
     window.location.href = pageUrls.home;
     return;
   }

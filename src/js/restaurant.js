@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, isLocalApiMode } from './api.js';
 import { pageUrls } from './routes.js';
 
 const CONTROL_ACCESS_KEY = 'fifa-control-access';
@@ -166,7 +166,7 @@ async function markOrderCollected(orderId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-	if (!hasControlAccess()) {
+	if (!hasControlAccess() && !isLocalApiMode) {
 		window.location.href = pageUrls.home;
 		return;
 	}

@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, isLocalApiMode } from './api.js';
 import { pageUrls, userPortalUrl } from './routes.js';
 
 const EGYPT_FLAG_ASSET = new URL('../assets/icon/flag.png', import.meta.url).href;
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (!hasUserAccess) {
+  if (!hasUserAccess && !isLocalApiMode) {
     window.location.href = pageUrls.home;
     return;
   }
