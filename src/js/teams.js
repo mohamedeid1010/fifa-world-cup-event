@@ -1,29 +1,29 @@
 const EGYPT_ROSTER = [
-  { num: 1, name: 'Mohamed El Shenawy', pos: 'Goalkeeper', img: '/src/assets/players/mohamed el shenawy.png', age: 35, club: 'Al Ahly' },
-  { num: 3, name: 'Mohamed Hany', pos: 'Defender', img: '/src/assets/players/mohamed_hany-removebg-preview.png', age: 28, club: 'Al Ahly' },
-  { num: 6, name: 'Ahmed Hegazi', pos: 'Defender', img: '/src/assets/players/ahmed_hegazy-removebg-preview (1).png', age: 33, club: 'Neom SC' },
-  { num: 2, name: 'Mohamed Abdelmonem', pos: 'Defender', img: '/src/assets/players/mohamed abdelmonem.png', age: 25, club: 'Nice' },
-  { num: 13, name: 'Ahmed Fotouh', pos: 'Defender', img: '/src/assets/players/Ahmed_fotouh-removebg-preview.png', age: 26, club: 'Zamalek' },
-  { num: 17, name: 'Mohamed Elneny', pos: 'Midfielder', img: '/src/assets/players/mohamed el neny.png', age: 31, club: 'Al Jazira' },
-  { num: 8, name: 'Emam Ashour', pos: 'Midfielder', img: '/src/assets/players/emam_ashour-removebg-preview.png', age: 26, club: 'Al Ahly' },
-  { num: 5, name: 'Hamdi Fathi', pos: 'Midfielder', img: '/src/assets/players/hamdi fathy.png', age: 29, club: 'Al-Wakrah' },
-  { num: 10, name: 'Mohamed Salah (C)', pos: 'Forward', img: '/src/assets/players/mohamed_salah-removebg-preview.png', age: 31, club: 'Liverpool' },
-  { num: 7, name: 'Trezeguet', pos: 'Forward', img: '/src/assets/players/Trezeguet.png', age: 29, club: 'Trabzonspor' },
-  { num: 19, name: 'Mostafa Mohamed', pos: 'Forward', img: '/src/assets/players/mostafa mohamed.png', age: 26, club: 'Nantes' }
+  { num: 1, name: 'Mohamed El Shenawy', pos: 'Goalkeeper', img: new URL('../assets/players/mohamed el shenawy.png', import.meta.url).href, age: 35, club: 'Al Ahly' },
+  { num: 3, name: 'Mohamed Hany', pos: 'Defender', img: new URL('../assets/players/mohamed_hany-removebg-preview.png', import.meta.url).href, age: 28, club: 'Al Ahly' },
+  { num: 6, name: 'Ahmed Hegazi', pos: 'Defender', img: new URL('../assets/players/ahmed_hegazy-removebg-preview (1).png', import.meta.url).href, age: 33, club: 'Neom SC' },
+  { num: 2, name: 'Mohamed Abdelmonem', pos: 'Defender', img: new URL('../assets/players/mohamed abdelmonem.png', import.meta.url).href, age: 25, club: 'Nice' },
+  { num: 13, name: 'Ahmed Fotouh', pos: 'Defender', img: new URL('../assets/players/Ahmed_fotouh-removebg-preview.png', import.meta.url).href, age: 26, club: 'Zamalek' },
+  { num: 17, name: 'Mohamed Elneny', pos: 'Midfielder', img: new URL('../assets/players/mohamed el neny.png', import.meta.url).href, age: 31, club: 'Al Jazira' },
+  { num: 8, name: 'Emam Ashour', pos: 'Midfielder', img: new URL('../assets/players/emam_ashour-removebg-preview.png', import.meta.url).href, age: 26, club: 'Al Ahly' },
+  { num: 5, name: 'Hamdi Fathi', pos: 'Midfielder', img: new URL('../assets/players/hamdi fathy.png', import.meta.url).href, age: 29, club: 'Al-Wakrah' },
+  { num: 10, name: 'Mohamed Salah (C)', pos: 'Forward', img: new URL('../assets/players/mohamed_salah-removebg-preview.png', import.meta.url).href, age: 31, club: 'Liverpool' },
+  { num: 7, name: 'Trezeguet', pos: 'Forward', img: new URL('../assets/players/Trezeguet.png', import.meta.url).href, age: 29, club: 'Trabzonspor' },
+  { num: 19, name: 'Mostafa Mohamed', pos: 'Forward', img: new URL('../assets/players/mostafa mohamed.png', import.meta.url).href, age: 26, club: 'Nantes' }
 ];
 
 const BELGIUM_ROSTER = [
-  { num: 1, name: 'Thibaut Courtois', pos: 'Goalkeeper', img: '/src/assets/players/courtois.png', age: 31, club: 'Real Madrid' },
-  { num: 21, name: 'Timothy Castagne', pos: 'Defender', img: '/src/assets/players/castagne_transparent.png', age: 28, club: 'Fulham' },
-  { num: 5, name: 'Jan Vertonghen', pos: 'Defender', img: '/src/assets/players/jan.png', age: 37, club: 'Anderlecht' },
-  { num: 4, name: 'Wout Faes', pos: 'Defender', img: '/src/assets/players/wout_faes.png', imgStyle: 'transform: scale(2.0); transform-origin: bottom center;', age: 26, club: 'Leicester' },
-  { num: 3, name: 'Arthur Theate', pos: 'Defender', img: '/src/assets/players/arthur.png?v=2', age: 23, club: 'Eintracht' },
-  { num: 8, name: 'Youri Tielemans', pos: 'Midfielder', img: '/src/assets/players/tielemans.png', age: 27, club: 'Aston Villa' },
-  { num: 24, name: 'Amadou Onana', pos: 'Midfielder', img: '/src/assets/players/onana.png', age: 22, club: 'Aston Villa' },
-  { num: 7, name: 'Kevin De Bruyne (C)', pos: 'Midfielder', img: '/src/assets/players/debruyne.png?v=2', age: 32, club: 'Man City' },
-  { num: 11, name: 'Yannick Carrasco', pos: 'Forward', img: '/src/assets/players/carrasco.png', age: 30, club: 'Al Shabab' },
-  { num: 10, name: 'Romelu Lukaku', pos: 'Forward', img: '/src/assets/players/lukaku.png?v=2', age: 30, club: 'Roma' },
-  { num: 22, name: 'Jérémy Doku', pos: 'Forward', img: '/src/assets/players/doku.png', age: 21, club: 'Man City' }
+  { num: 1, name: 'Thibaut Courtois', pos: 'Goalkeeper', img: new URL('../assets/players/courtois.png', import.meta.url).href, age: 31, club: 'Real Madrid' },
+  { num: 21, name: 'Timothy Castagne', pos: 'Defender', img: new URL('../assets/players/castagne_transparent.png', import.meta.url).href, age: 28, club: 'Fulham' },
+  { num: 5, name: 'Jan Vertonghen', pos: 'Defender', img: new URL('../assets/players/jan.png', import.meta.url).href, age: 37, club: 'Anderlecht' },
+  { num: 4, name: 'Wout Faes', pos: 'Defender', img: new URL('../assets/players/wout_faes.png', import.meta.url).href, imgStyle: 'transform: scale(2.0); transform-origin: bottom center;', age: 26, club: 'Leicester' },
+  { num: 3, name: 'Arthur Theate', pos: 'Defender', img: new URL('../assets/players/arthur.png?v=2', import.meta.url).href, age: 23, club: 'Eintracht' },
+  { num: 8, name: 'Youri Tielemans', pos: 'Midfielder', img: new URL('../assets/players/tielemans.png', import.meta.url).href, age: 27, club: 'Aston Villa' },
+  { num: 24, name: 'Amadou Onana', pos: 'Midfielder', img: new URL('../assets/players/onana.png', import.meta.url).href, age: 22, club: 'Aston Villa' },
+  { num: 7, name: 'Kevin De Bruyne (C)', pos: 'Midfielder', img: new URL('../assets/players/debruyne.png?v=2', import.meta.url).href, age: 32, club: 'Man City' },
+  { num: 11, name: 'Yannick Carrasco', pos: 'Forward', img: new URL('../assets/players/carrasco.png', import.meta.url).href, age: 30, club: 'Al Shabab' },
+  { num: 10, name: 'Romelu Lukaku', pos: 'Forward', img: new URL('../assets/players/lukaku.png?v=2', import.meta.url).href, age: 30, club: 'Roma' },
+  { num: 22, name: 'Jérémy Doku', pos: 'Forward', img: new URL('../assets/players/doku.png', import.meta.url).href, age: 21, club: 'Man City' }
 ];
 
 function readStoredUser() {
