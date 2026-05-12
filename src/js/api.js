@@ -7,7 +7,7 @@ const LEGACY_TICKETS_KEY = 'fifa-matchday-tickets';
 const LEGACY_SERVICES_KEY = 'fifa-matchday-services';
 const FORCE_STATIC_ONLY = import.meta.env.VITE_STATIC_ONLY === 'true';
 const CONFIGURED_API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL || '');
-const USE_LOCAL_API = FORCE_STATIC_ONLY || (!CONFIGURED_API_BASE && (import.meta.env.PROD || import.meta.env.BASE_URL !== '/'));
+const USE_LOCAL_API = true;
 const API_BASE = CONFIGURED_API_BASE || DEFAULT_API_BASE;
 
 export const isLocalApiMode = USE_LOCAL_API;
