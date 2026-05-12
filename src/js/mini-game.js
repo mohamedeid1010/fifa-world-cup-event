@@ -15,9 +15,11 @@ const nextLevelOverlay = document.getElementById('next-level-overlay');
 const nextLevelBtn = document.getElementById('next-level-btn');
 const goalPost = document.querySelector('.goal-post');
 
+import ballSrc from '../assets/image/ball.png';
+
 // Assets
 const ballImg = new Image();
-ballImg.src = '/src/assets/image/ball.png';
+ballImg.src = ballSrc;
 
 // Funny elements
 const funnyGoalShouts = ["SIIIIIIU!", "MAGISTERIAL!", "WHAT A SCREAMER!", "GOOOOOOOOAL!", "TOP BINS!", "ABSOLUTE FILTH!", "HAVE THAT!"];
